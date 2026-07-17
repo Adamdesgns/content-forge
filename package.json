@@ -30,17 +30,20 @@
       "output": "release"
     },
     "win": {
+      "icon": "assets/icon.png",
       "target": [
         "portable",
         "nsis"
       ]
     },
     "mac": {
+      "icon": "assets/icon.png",
       "target": [
         "dmg"
       ]
     },
     "linux": {
+      "icon": "assets/icon.png",
       "target": [
         "AppImage"
       ]
