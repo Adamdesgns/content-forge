@@ -8,7 +8,8 @@ const ALLOWED_PROMPTS = new Set([
   'editorial-os-instagram-carousel-prompt.md',
   'NEON-LISTICLE-CAROUSEL-v1.md',
   'TIKTOK-REEL-FORGE-v1.md',
-  'ARTICLE-IMAGE-5x2-v1.md'
+  'ARTICLE-IMAGE-5x2-v1.md',
+  'FACEBOOK-PROMPT-POST-v1.md'
 ]);
 
 function getDataPath() {
@@ -169,7 +170,12 @@ ipcMain.handle('app:import-data', async () => {
     filters: [{ name: 'JSON', extensions: ['json'] }]
   });
   if (canceled || !filePaths?.[0]) return { canceled: true };
-  const data = await readJsonFile(filePaths[0]);
+  let data;
+  try {
+    data = await readJsonFile(filePaths[0]);
+  } catch (error) {
+    return { error: 'The selected file is not valid Content Forge JSON.' };
+  }
   await writeJsonFile(getDataPath(), data);
   return { ok: true, path: filePaths[0], data };
 });
