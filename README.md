@@ -66,6 +66,38 @@ npm run dist:win
 
 The packaged app will appear inside the `release` folder.
 
+## Mobile / installable web app (PWA)
+
+The same app runs on phones as an installable Progressive Web App. Build the
+static web bundle with:
+
+```bash
+npm run build:web
+```
+
+This generates a self-contained `web/` folder (app shell + full prompt
+library + icons + manifest + offline service worker).
+
+**Test on your phone (same Wi-Fi):**
+
+```bash
+cd web
+npx --yes serve .        # or: python3 -m http.server 8080
+```
+
+Open the printed `http://<your-computer-ip>:PORT` on your phone, then:
+
+- iOS Safari: **Share → Add to Home Screen**
+- Android Chrome: **menu → Install app**
+
+**Deploy publicly (needed for install + offline):** drag the `web/` folder onto
+[Netlify Drop](https://app.netlify.com/drop), or use Vercel / GitHub Pages /
+Cloudflare Pages. Any static host works.
+
+On mobile the app stores projects in the browser (localStorage) and caches the
+prompt library for offline use. `web/` is a build output and is not committed —
+regenerate it any time with `npm run build:web`.
+
 ## Local data
 
 Projects, brand defaults, prompt edits, and compressed reference-image previews are stored in Electron's user-data folder as:
