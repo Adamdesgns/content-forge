@@ -1,0 +1,32 @@
+name: Build Windows Desktop App
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Build Windows installer + portable exe
+        run: npx electron-builder --win nsis portable --publish never
+      - name: Publish installer to the Desktop release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view desktop-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create desktop-latest --repo "$GITHUB_REPOSITORY" \
+                 --title "Lucedale Content Forge — Desktop" \
+                 --notes "Windows desktop app. Download the Setup .exe, run it, and click More info -> Run anyway if SmartScreen warns (the app is unsigned). Includes the AI Studio for OpenAI text + image generation."
+          gh release upload desktop-latest release/*.exe --clobber --repo "$GITHUB_REPOSITORY"
