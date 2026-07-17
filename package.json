@@ -13,7 +13,8 @@
     "dist": "electron-builder",
     "dist:win": "electron-builder --win portable",
     "dist:mac": "electron-builder --mac dmg",
-    "dist:linux": "electron-builder --linux AppImage"
+    "dist:linux": "electron-builder --linux AppImage",
+    "build:artifact": "node scripts/build-artifact.js"
   },
   "build": {
     "appId": "com.lucedalelogo.contentforge",
