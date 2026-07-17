@@ -724,6 +724,28 @@
     .spec-box ul { margin: 0; padding-left: 18px; color: #c7c7cc; font-size: 12px; line-height: 1.5; }
     .spec-box li + li { margin-top: 4px; }
 
+    /* AI settings + Studio */
+    .settings-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .settings-section h3 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.02em; }
+    .settings-hint { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .ai-studio { margin: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 18px; }
+    .ai-studio-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+    .ai-studio-head strong { font-size: 16px; letter-spacing: -.02em; }
+    .ai-studio-head span { color: var(--muted); font-size: 12px; }
+    .studio-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+    .studio-note { color: var(--muted); font-size: 12.5px; line-height: 1.5; background: rgba(29,155,240,.06); border: 1px solid rgba(29,155,240,.16); border-radius: 12px; padding: 12px 14px; }
+    .studio-status { min-height: 18px; color: var(--muted); font-size: 12.5px; margin: 6px 0; }
+    .studio-status.error { color: #ff6b6b; }
+    .studio-output { width: 100%; min-height: 180px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #0b0d11; color: var(--text); font-size: 14px; line-height: 1.55; resize: vertical; white-space: pre-wrap; }
+    .studio-output:empty::before { content: "Generated copy will appear here."; color: var(--muted); }
+    .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+    .gen-img { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #0b0d11; display: flex; flex-direction: column; }
+    .gen-img img { width: 100%; height: auto; display: block; }
+    .gen-img .btn { border-radius: 0; border: 0; border-top: 1px solid var(--line); }
+    .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.25); border-top-color: var(--blue); border-radius: 50%; display: inline-block; vertical-align: -2px; margin-right: 7px; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
     /* ============================================================
        Mobile / PWA responsive layer (v0.8 mobile)
        Placed last so it overrides the desktop rules by source order.
@@ -818,6 +840,11 @@
       .editor-wrap { min-height: 60vh; }
       .prompt-editor { min-height: 55vh; font-size: 13px; }
       .workspace-scroll { max-height: 40vh; }
+
+      /* AI Studio on phones */
+      .ai-studio { margin: 0 14px 14px; }
+      .ai-studio-head { flex-direction: column; gap: 2px; }
+      .studio-actions .btn { flex: 1; }
 
       .toast { left: 14px; right: 14px; transform: none; width: auto; text-align: center; }
       .toast.show { transform: translateY(0); }
@@ -1071,6 +1098,23 @@
         </div>
       </aside>
     </div>
+
+    <section class="ai-studio" id="aiStudio">
+      <div class="ai-studio-head">
+        <strong>AI Studio</strong>
+        <span>Generate finished copy and images with OpenAI.</span>
+      </div>
+      <div id="studioBody">
+        <div class="studio-actions">
+          <button class="btn primary small" id="genTextBtn">Generate Text</button>
+          <button class="btn small" id="genImageBtn">Generate Image</button>
+          <button class="btn ghost small" id="copyGenTextBtn">Copy Text</button>
+        </div>
+        <div class="studio-status" id="studioStatus"></div>
+        <div class="studio-output" id="genTextOutput" contenteditable="true" spellcheck="false"></div>
+        <div class="image-grid" id="genImageGrid"></div>
+      </div>
+    </section>
   </section>
 
   <div class="modal-backdrop hidden" id="libraryBackdrop">
@@ -1151,6 +1195,45 @@
           <div class="field"><label>Handle</label><input id="settingsHandle" /></div>
           <div class="field"><label>Default audience</label><input id="settingsAudience" /></div>
           <div class="field full"><label>Standing content rules</label><textarea id="settingsRules" style="min-height:110px"></textarea></div>
+        </div>
+
+        <div class="settings-section">
+          <h3>AI Generation (OpenAI)</h3>
+          <p class="settings-hint">Your key is stored only on this device and is never included in exports. Usage is billed to your OpenAI account. Get a key at platform.openai.com.</p>
+          <div class="form-grid">
+            <div class="field full">
+              <label>OpenAI API key</label>
+              <input id="settingsOpenaiKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="field">
+              <label>Text model</label>
+              <input id="settingsTextModel" list="textModelList" placeholder="gpt-4o-mini" spellcheck="false" />
+              <datalist id="textModelList">
+                <option value="gpt-4o-mini"></option>
+                <option value="gpt-4o"></option>
+                <option value="gpt-4.1"></option>
+                <option value="gpt-4.1-mini"></option>
+              </datalist>
+              <span class="hint">Writes the copy.</span>
+            </div>
+            <div class="field">
+              <label>Image model</label>
+              <select id="settingsImageModel">
+                <option value="gpt-image-1">gpt-image-1</option>
+                <option value="dall-e-3">dall-e-3</option>
+                <option value="dall-e-2">dall-e-2</option>
+              </select>
+              <span class="hint">Renders images.</span>
+            </div>
+            <div class="field">
+              <label>Image size</label>
+              <select id="settingsImageSize">
+                <option value="1024x1024">1024 × 1024 (square)</option>
+                <option value="1024x1536">1024 × 1536 (portrait)</option>
+                <option value="1536x1024">1536 × 1024 (landscape)</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1609,6 +1692,21 @@
     let state = structuredClone(DEFAULT_STATE);
     let wizard = { step: 1, platform: 'instagram', generator: 'carousel-forge', assets: [] };
     let activeProject = null;
+
+    /* AI settings live OUTSIDE the exportable state so an exported/shared file
+       never carries the API key. Stored on-device only. */
+    const DEFAULT_SETTINGS = { openaiKey: '', textModel: 'gpt-4o-mini', imageModel: 'gpt-image-1', imageSize: '1024x1024' };
+    let settings = { ...DEFAULT_SETTINGS };
+    function loadSettings() {
+      try { const s = JSON.parse(localStorage.getItem('contentForgeSettings') || 'null'); if (s) settings = { ...DEFAULT_SETTINGS, ...s }; } catch (error) { /* ignore */ }
+    }
+    function saveSettings() {
+      try { localStorage.setItem('contentForgeSettings', JSON.stringify(settings)); } catch (error) { showToast('Could not save AI settings on this device.'); }
+    }
+    /* Generated images are kept in-session only (not in saved state) so large
+       image data never blows the browser storage quota. Text is saved on the project. */
+    let sessionImages = {};
+    const canGenerate = () => !window.__ARTIFACT__;
     let activeEditorView = 'prompt';
     let toastTimer = null;
 
@@ -2289,6 +2387,7 @@ ${buildSelectedPromptLayers(project)}`;
       $('#promptEditor').value = activeProject.prompt;
       renderProjectDetails();
       renderAdaptations();
+      renderStudio();
       $$('.editor-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.editorView === 'prompt'));
       $('#workspace').classList.remove('hidden');
     }
@@ -2375,10 +2474,135 @@ Return three concepts, rank them, then provide the final image-generation prompt
     async function saveActiveProject() {
       if (!activeProject) return;
       if (activeEditorView === 'prompt') activeProject.prompt = $('#promptEditor').value;
+      activeProject.generatedText = $('#genTextOutput').innerText.trim();
       activeProject.updatedAt = Date.now();
       await saveState();
       renderRecent();
       showToast('Project saved.');
+    }
+
+    /* ---------- AI Studio (OpenAI generation) ---------- */
+    function renderStudio() {
+      const body = $('#studioBody');
+      if (!canGenerate()) {
+        body.innerHTML = '<div class="studio-note">Live generation is not available in the shared artifact (its sandbox blocks outside API calls). Use the installable web app or the desktop app to generate with your OpenAI key.</div>';
+        return;
+      }
+      $('#studioStatus').textContent = '';
+      $('#studioStatus').classList.remove('error');
+      $('#genTextOutput').innerText = activeProject?.generatedText || '';
+      renderGenImages();
+      if (!settings.openaiKey) setStudioStatus('Add your OpenAI key in Settings (⚙) to generate.');
+    }
+
+    function renderGenImages() {
+      const grid = $('#genImageGrid');
+      const imgs = sessionImages[activeProject?.id] || [];
+      grid.innerHTML = imgs.map((src, i) => `
+        <div class="gen-img">
+          <img src="${src}" alt="Generated image ${i + 1}" />
+          <button class="btn small" data-download-img="${i}">Download</button>
+        </div>`).join('');
+      $$('[data-download-img]').forEach((button) => button.addEventListener('click', () => {
+        const i = Number(button.dataset.downloadImg);
+        const a = document.createElement('a');
+        a.href = imgs[i];
+        a.download = `${slugify(activeProject.name)}-${i + 1}.png`;
+        a.click();
+      }));
+    }
+
+    function setStudioStatus(message, isError = false) {
+      const el = $('#studioStatus');
+      el.innerHTML = message;
+      el.classList.toggle('error', isError);
+    }
+
+    function friendlyOpenAIError(status, message) {
+      if (status === 401) return 'OpenAI rejected the key (401). Check the key in Settings.';
+      if (status === 429) return 'OpenAI is rate-limiting or the account is out of credit (429).';
+      if (status === 400) return 'OpenAI rejected the request (400): ' + (message || 'check the selected model.');
+      if (status === 403) return 'This model is not available to your account (403). Try a different model in Settings.';
+      if (!status) return 'Could not reach OpenAI. Check the connection (this is blocked inside a claude.ai artifact).';
+      return `OpenAI error ${status}: ${message || 'unknown'}`;
+    }
+
+    async function openaiFetch(path, payload) {
+      let res;
+      try {
+        res = await fetch('https://api.openai.com/v1/' + path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + settings.openaiKey },
+          body: JSON.stringify(payload)
+        });
+      } catch (networkError) {
+        throw new Error(friendlyOpenAIError(0));
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(friendlyOpenAIError(res.status, data.error && data.error.message));
+      return data;
+    }
+
+    async function generateText() {
+      if (!activeProject) return;
+      if (!settings.openaiKey) { setStudioStatus('Add your OpenAI key in Settings first.', true); return; }
+      const prompt = $('#promptEditor').value || activeProject.prompt;
+      setStudioStatus('<span class="spinner"></span>Writing copy with ' + escapeHtml(settings.textModel) + '…');
+      $('#genTextBtn').disabled = true;
+      try {
+        const data = await openaiFetch('chat/completions', {
+          model: settings.textModel,
+          messages: [
+            { role: 'system', content: 'You are a senior social media copywriter. Follow the platform and character rules in the brief exactly. Return only the finished, ready-to-post content with clear labels for each part (hook, caption, CTA, hashtags, etc.). No preamble.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.8
+        });
+        const text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+        $('#genTextOutput').innerText = text || '(No text returned.)';
+        activeProject.generatedText = text;
+        await saveState();
+        setStudioStatus('Done. Edit above if needed, then Save Project.');
+      } catch (error) {
+        setStudioStatus(escapeHtml(error.message), true);
+      } finally {
+        $('#genTextBtn').disabled = false;
+      }
+    }
+
+    async function generateImage() {
+      if (!activeProject) return;
+      if (!settings.openaiKey) { setStudioStatus('Add your OpenAI key in Settings first.', true); return; }
+      const imagePrompt = buildImageGenPrompt(activeProject);
+      setStudioStatus('<span class="spinner"></span>Rendering image with ' + escapeHtml(settings.imageModel) + '…');
+      $('#genImageBtn').disabled = true;
+      try {
+        const payload = { model: settings.imageModel, prompt: imagePrompt, size: settings.imageSize, n: 1 };
+        if (settings.imageModel === 'gpt-image-1') payload.response_format = undefined; // gpt-image-1 always returns b64
+        const data = await openaiFetch('images/generations', payload);
+        const item = data.data && data.data[0] ? data.data[0] : {};
+        const src = item.b64_json ? 'data:image/png;base64,' + item.b64_json : item.url;
+        if (!src) throw new Error('OpenAI returned no image.');
+        sessionImages[activeProject.id] = sessionImages[activeProject.id] || [];
+        sessionImages[activeProject.id].unshift(src);
+        renderGenImages();
+        setStudioStatus('Image ready. Download it below (images are not saved with the project).');
+      } catch (error) {
+        setStudioStatus(escapeHtml(error.message), true);
+      } finally {
+        $('#genImageBtn').disabled = false;
+      }
+    }
+
+    function buildImageGenPrompt(project) {
+      const imagePrompt = getImagePrompt(project.imagePromptId);
+      return [
+        `Create a single on-brand image for a ${PLATFORM_DATA[project.platform].name} post.`,
+        `Visual system: ${project.imagePromptTitle || imagePrompt.name}.`,
+        `Topic and message: ${project.brief || project.name}.`,
+        `Brand: ${project.brand}. Goal: ${project.goal}. Tone: ${project.tone}.`,
+        'Design a finished, polished, text-minimal graphic suitable for direct posting. Avoid spelling errors in any on-image text.'
+      ].join(' ');
     }
 
     function downloadText(filename, content) {
@@ -2436,6 +2660,10 @@ Return three concepts, rank them, then provide the final image-generation prompt
       $('#settingsHandle').value = state.brand.handle;
       $('#settingsAudience').value = state.brand.audience;
       $('#settingsRules').value = state.brand.rules;
+      $('#settingsOpenaiKey').value = settings.openaiKey;
+      $('#settingsTextModel').value = settings.textModel;
+      $('#settingsImageModel').value = settings.imageModel;
+      $('#settingsImageSize').value = settings.imageSize;
     }
 
     function renderAll() {
@@ -2485,6 +2713,13 @@ Return three concepts, rank them, then provide the final image-generation prompt
     $('#copyPromptBtn').addEventListener('click', async () => { await copyText($('#promptEditor').value); showToast('Prompt copied.'); });
     $('#downloadPromptBtn').addEventListener('click', () => { if (activeProject) downloadText(`${slugify(activeProject.name)}.txt`, $('#promptEditor').value); });
     $('#saveProjectBtn').addEventListener('click', saveActiveProject);
+    $('#aiStudio').addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.id === 'genTextBtn') generateText();
+      else if (button.id === 'genImageBtn') generateImage();
+      else if (button.id === 'copyGenTextBtn') copyText($('#genTextOutput').innerText).then(() => showToast('Generated text copied.'));
+    });
     $$('.editor-tab').forEach((tab) => tab.addEventListener('click', () => {
       if (!activeProject) return;
       $$('.editor-tab').forEach((item) => item.classList.toggle('active', item === tab));
@@ -2505,9 +2740,15 @@ Return three concepts, rank them, then provide the final image-generation prompt
         audience: $('#settingsAudience').value.trim(),
         rules: $('#settingsRules').value.trim()
       };
+      settings.openaiKey = $('#settingsOpenaiKey').value.trim();
+      settings.textModel = $('#settingsTextModel').value.trim() || DEFAULT_SETTINGS.textModel;
+      settings.imageModel = $('#settingsImageModel').value;
+      settings.imageSize = $('#settingsImageSize').value;
+      saveSettings();
       await saveState();
       $('#settingsBackdrop').classList.add('hidden');
-      showToast('Brand settings saved.');
+      showToast('Settings saved.');
+      if (activeProject) renderStudio();
     });
 
     document.addEventListener('keydown', (event) => {
@@ -2529,6 +2770,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
       const runtimePlatform = window.contentForge?.platform || 'browser';
       document.body.classList.add(`platform-${runtimePlatform}`);
       if (runtimePlatform === 'darwin') document.querySelector('.window-controls')?.classList.add('hidden');
+      loadSettings();
       await loadState();
       renderAll();
     })();

@@ -41,6 +41,7 @@ const promptsLiteral = JSON.stringify(prompts).replace(/</g, '\\u003c');
 //    inlined-prompt provider.
 const artifactBootstrap =
 `    /* Artifact build — prompts inlined, no network, no service worker. */
+    window.__ARTIFACT__ = true;
     const __PROMPTS = ${promptsLiteral};
     window.contentForge = {
       platform: 'browser',
