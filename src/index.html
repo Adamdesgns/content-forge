@@ -1372,16 +1372,20 @@
        (Subscription, $9.99, 3-day free trial, License Keys ON). Until then the
        app falls back to the invite password gate so it keeps working. */
     const LICENSING = {
-      storeId: '__LS_STORE_ID__',        // e.g. '123456'
-      productId: '__LS_PRODUCT_ID__',    // the product/variant id sold
-      checkoutUrl: '__LS_CHECKOUT_URL__',// "Start free trial" checkout link
+      storeId: '434482',                 // AdamDesgns store
+      productId: '__LS_PRODUCT_ID__',    // optional (store-wide match if left as-is)
+      checkoutUrl: 'https://adamdesgns.lemonsqueezy.com/checkout/buy/8eb28901-b804-4056-a7ec-e22af27dd2d0',
       portalUrl: 'https://app.lemonsqueezy.com/my-orders', // where customers manage/cancel
       offlineGraceDays: 7,               // keep working offline this long between checks
       revalidateEveryHours: 12           // re-verify with the server at most this often
     };
     // Only the Store ID + checkout link are required to go live; Product ID is
     // optional (tighter matching if set, store-wide match if left as-is).
-    const LICENSING_CONFIGURED = !window.__ARTIFACT__ && !LICENSING.storeId.startsWith('__');
+    // License mode runs on the desktop app only for now. The web/artifact builds
+    // stay on the invite gate because a browser calling Lemon Squeezy's license
+    // API can be blocked by CORS (web licensing will come via a small proxy).
+    const CF_IS_DESKTOP = !!(window.contentForge && window.contentForge.platform && window.contentForge.platform !== 'browser');
+    const LICENSING_CONFIGURED = !window.__ARTIFACT__ && CF_IS_DESKTOP && !LICENSING.storeId.startsWith('__');
 
     function lsGetLicense() { try { return JSON.parse(localStorage.getItem('cfLicense') || 'null'); } catch (e) { return null; } }
     function lsSetLicense(v) { try { localStorage.setItem('cfLicense', JSON.stringify(v)); } catch (e) { /* ignore */ } }
