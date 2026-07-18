@@ -1323,13 +1323,17 @@
       offlineGraceDays: 7,               // keep working offline this long between checks
       revalidateEveryHours: 12           // re-verify with the server at most this often
     };
-    const LICENSING_CONFIGURED = !window.__ARTIFACT__
-      && !LICENSING.storeId.startsWith('__') && !LICENSING.productId.startsWith('__');
+    // Only the Store ID + checkout link are required to go live; Product ID is
+    // optional (tighter matching if set, store-wide match if left as-is).
+    const LICENSING_CONFIGURED = !window.__ARTIFACT__ && !LICENSING.storeId.startsWith('__');
 
     function lsGetLicense() { try { return JSON.parse(localStorage.getItem('cfLicense') || 'null'); } catch (e) { return null; } }
     function lsSetLicense(v) { try { localStorage.setItem('cfLicense', JSON.stringify(v)); } catch (e) { /* ignore */ } }
     function lsProductMatches(meta) {
-      return meta && String(meta.store_id) === String(LICENSING.storeId) && String(meta.product_id) === String(LICENSING.productId);
+      if (!meta || String(meta.store_id) !== String(LICENSING.storeId)) return false;
+      const pid = LICENSING.productId;
+      if (!pid || pid === 'ANY' || pid.startsWith('__')) return true; // store-wide match
+      return String(meta.product_id) === String(pid);
     }
     async function lsCall(path, params) {
       const res = await fetch('https://api.lemonsqueezy.com/v1/licenses/' + path, {
