@@ -6,7 +6,9 @@ This document describes the product for anyone building marketing around it (lan
 
 ## 1. One-liner options
 
-- **Turn one idea into a finished post — copy, image, and all — for every network.**
+- **Create once. Publish everywhere.** ← primary tagline; use verbatim
+- Turn one idea into a finished post — copy, image, and all — for every network.
+- You never start with a blank page.
 - The content workstation that writes, designs, and preps your post for 11 networks at once.
 - One brief in. Platform-ready content out.
 
@@ -20,7 +22,7 @@ A **platform-first content workstation** available three ways from one codebase:
 - **Web app / installable PWA** (add to home screen on any phone)
 - (Internal: a claude.ai artifact demo build also exists)
 
-**Core workflow:** Pick a platform → pick a generator → add a brief or reference images → the app builds an expert-level content prompt → AI Studio generates the finished caption + image → Publish Studio adapts it to all 11 networks and launches each composer.
+**Core workflow:** Pick a platform → pick a generator → add a brief or reference images → the app builds an expert-level content prompt → Generate (formerly AI Studio) generates the finished caption + image → Launch (formerly Publish Studio) adapts it to all 11 networks and launches each composer.
 
 ## 3. Who it's for (audiences, in priority order)
 
@@ -34,9 +36,9 @@ A **platform-first content workstation** available three ways from one codebase:
 |---|---|
 | Generators for X, Instagram, Threads, Facebook, TikTok, YouTube (carousels, reels, threads, stories, giveaways, articles) | "Never start from a blank page — pick the format, it knows the recipe." |
 | 6 bundled professional prompt systems (Carousel Forge, Editorial OS, Neon Listicle, TikTok Reel Forge, Article 5:2, FB Prompt Post) | "Agency-grade content systems built in." |
-| AI Studio: generates finished captions (hook/caption/CTA/hashtags) and real images | "It doesn't just prompt — it produces the post." |
+| Generate (formerly AI Studio): generates finished captions (hook/caption/CTA/hashtags) and real images | "It doesn't just prompt — it produces the post." |
 | Bring-your-own OpenAI key | "No AI markup. Pay OpenAI pennies directly; we never touch your usage." |
-| Publish Studio: one post auto-adapted to **11 networks** (X, Instagram, Threads, Facebook, TikTok, YouTube, LinkedIn, Pinterest, Reddit, Bluesky, Snapchat) — live char counts, hashtag caps per network, smart trimming | "Write once. Fits everywhere. No more counting characters." |
+| Launch (formerly Publish Studio): one post auto-adapted to **11 networks** (X, Instagram, Threads, Facebook, TikTok, YouTube, LinkedIn, Pinterest, Reddit, Bluesky, Snapchat) — live char counts, hashtag caps per network, smart trimming | "Write once. Fits everywhere. No more counting characters." |
 | One-click **Open** launches each network's real composer docked beside the app; X/Threads/Bluesky/Reddit/LinkedIn arrive pre-filled, others auto-copy for one paste | "Post to every network in minutes, not an afternoon." |
 | Everything stored locally on the user's device; no account with us, no content on our servers | "Your content and your API key never leave your machine." |
 | Works as phone app (PWA) + desktop | "Same tool at your desk and in your pocket." |
@@ -73,7 +75,7 @@ A **platform-first content workstation** available three ways from one codebase:
 
 ## 8. Objections & answers (FAQ fodder)
 
-- **"Do I need an OpenAI account?"** For AI generation, yes — a free key from platform.openai.com; typical cost is cents. Everything else (generators, prompts, Publish Studio adaptation) works without it.
+- **"Do I need an OpenAI account?"** For AI generation, yes — a free key from platform.openai.com; typical cost is cents. Everything else (generators, prompts, Launch (formerly Publish Studio) adaptation) works without it.
 - **"Does it post for me?"** It preps the post and opens each network's composer — you tap Post. You stay in control of every account (and no risky API access to your socials).
 - **"What devices?"** Windows desktop app + web app that installs on iPhone/Android home screen (and runs in any browser, including on Mac).
 - **"Can I cancel?"** Anytime via the Manage Subscription link in the app; the app keeps working until the period ends.
@@ -83,9 +85,9 @@ A **platform-first content workstation** available three ways from one codebase:
 
 - Live web app: https://adamdesgns.github.io/content-forge/
 - Desktop download (always-latest): https://github.com/Adamdesgns/content-forge/releases/tag/desktop-latest
-- Versioned releases: `vX.Y.Z` tags on the same Releases page (current: v0.9.0)
+- Versioned releases: `vX.Y.Z` tags on the same Releases page (current: v1.0.0-beta.1)
 - App icon: `assets/icon.png` (512px, "LL"→ regenerate a "CF" version before public launch — see note below)
-- Screenshot sources: run the app and capture (1) home with generator cards, (2) wizard, (3) AI Studio with generated post + image, (4) Publish Studio's 11 cards. Dark UI screenshots read well on both light/dark feeds.
+- Screenshot sources: run the app and capture (1) home with generator cards, (2) wizard, (3) Generate (formerly AI Studio) with generated post + image, (4) Launch (formerly Publish Studio)'s 11 cards. Dark UI screenshots read well on both light/dark feeds.
 - **Checkout link:** from Lemon Squeezy once the store is wired (see HANDOFF.md §6). Until then the app is gated by invite password — **don't run paid traffic before the store is live.**
 
 **Pre-launch asset gaps to close:**
@@ -103,11 +105,11 @@ A **platform-first content workstation** available three ways from one codebase:
 **Launch caption (short):**
 > Content Forge is live. Give it one idea → it writes the caption, generates the image, and fits your post to 11 networks' rules — then opens each composer with everything ready. 3-day free trial, $9.99/mo. Your content stays on your device.
 
-**Demo-video script beats (45s):** blank page pain (5s) → type one brief (5s) → AI writes caption + renders image (10s) → Publish Studio's 11 cards adapt live, counts turning green (10s) → click Open on X, composer pops up pre-filled, hit Post (10s) → logo + price + trial CTA (5s).
+**Demo-video script beats (45s):** blank page pain (5s) → type one brief (5s) → AI writes caption + renders image (10s) → Launch (formerly Publish Studio)'s 11 cards adapt live, counts turning green (10s) → click Open on X, composer pops up pre-filled, hit Post (10s) → logo + price + trial CTA (5s).
 
 ## 11. Product facts (for accuracy checks)
 
-- Current version: **0.9.0** · Windows installer ~100 MB · PWA works offline after first load
+- Current version: **1.0.0-beta.1** · Windows installer ~100 MB · PWA works offline after first load
 - Access: license key (subscription) once store is wired; invite password during pre-launch
 - Networks adapted: X 280 · Bluesky 300 · Threads 500 (1 hashtag) · Snapchat 250 (3 tags) · Pinterest 500 · LinkedIn 3,000 (5 tags) · Instagram 2,200 (30 tags) · TikTok 2,200 · YouTube 5,000 · Facebook 63,206 · Reddit 40,000 (tags stripped, title auto-split)
 - Tech trust points: no telemetry, no account system, open codebase (currently public repo)

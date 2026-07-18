@@ -7,7 +7,7 @@ Paste this into a new chat to pick up where we left off. It's the map of everyth
 ## 1. What it is
 **Content Forge** — a platform-first content workstation. You pick a social platform, choose a generator, add a brief/images, and it builds ready-to-use prompts **and** (with an OpenAI key) generates finished copy and images. Access is gated (invite password now, subscription licensing when configured).
 
-- **Version:** 0.9.0
+- **Version:** 1.0.0-beta.1 · Tagline: **"Create once. Publish everywhere."** · In-app naming: campaigns (not projects), **Generate** (was AI Studio), **Launch** (was Publish Studio). UI copy only — internal code/data keys still say project/aiStudio/publishStudio.
 - **Owner / GitHub:** `Adamdesgns`
 - **One-line pitch:** turn one idea into a finished caption + image, on phone or desktop.
 

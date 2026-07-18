@@ -724,6 +724,12 @@
     .spec-box ul { margin: 0; padding-left: 18px; color: #c7c7cc; font-size: 12px; line-height: 1.5; }
     .spec-box li + li { margin-top: 4px; }
 
+    /* Pipeline strip (IDEA → GENERATE → ADAPT → LAUNCH) */
+    .pipeline { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 11.5px; font-weight: 850; letter-spacing: .14em; color: var(--muted); flex-wrap: wrap; }
+    .pipeline .pipe-arrow { color: var(--blue); font-weight: 400; letter-spacing: 0; }
+    .made-by { color: var(--muted); font-size: 12px; text-align: center; margin: 26px 0 6px; }
+    .made-by a { color: inherit; text-decoration: none; }
+
     /* Lock screen (invite-only gate) */
     .lock-screen { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(1200px 800px at 50% -10%, #12151b 0%, var(--bg) 70%); }
     .lock-screen.hidden { display: none; }
@@ -913,6 +919,8 @@
         <button class="btn primary" type="submit">Unlock</button>
         <div class="lock-error" id="lockError"></div>
       </form>
+
+      <p class="made-by" style="margin:6px 0 0">Create once. Publish everywhere. · Built by @AdamDesgns</p>
     </div>
   </div>
 
@@ -927,24 +935,31 @@
         <div class="brand-mark">CF</div>
         <div>
           <div class="brand-name" id="appName">Content Forge</div>
-          <div class="brand-sub" id="appSubtitle">Platform-first content workstation</div>
+          <div class="brand-sub" id="appSubtitle">Create once. Publish everywhere.</div>
         </div>
       </div>
 
       <div class="top-actions">
         <button class="btn ghost" id="promptLibraryBtn">Prompt Library</button>
         <button class="btn icon" id="settingsBtn" title="Brand settings">⚙</button>
-        <button class="btn primary" id="newProjectBtn">+ Start a New</button>
+        <button class="btn primary" id="newProjectBtn">+ New Campaign</button>
       </div>
     </header>
 
     <main class="page">
       <section class="hero">
         <div>
-          <div class="eyebrow" id="heroEyebrow">Content Forge System</div>
-          <h1 id="heroTitle">What are we making?</h1>
-          <p id="heroDescription">Choose a platform, pick the right generator, add a brief or reference image, and build a reusable content project.</p>
+          <div class="eyebrow" id="heroEyebrow">Create once. Publish everywhere.</div>
+          <h1 id="heroTitle">What are we launching?</h1>
+          <p id="heroDescription">You never start with a blank page. Pick a platform, add one idea, and turn it into platform-ready posts for every major social network.</p>
+          <div class="pipeline" aria-label="How it works">
+            <span>IDEA</span><span class="pipe-arrow">→</span>
+            <span>GENERATE</span><span class="pipe-arrow">→</span>
+            <span>ADAPT</span><span class="pipe-arrow">→</span>
+            <span>LAUNCH</span>
+          </div>
         </div>
+        <button class="btn primary hidden" id="continueCampaignBtn"></button>
       </section>
 
       <nav class="platform-tabs" id="platformTabs" aria-label="Social platforms"></nav>
@@ -964,8 +979,8 @@
         <aside class="panel recent-panel">
           <div class="section-head">
             <div>
-              <h2>Recent Projects</h2>
-              <p>Open a saved draft and keep working.</p>
+              <h2>Recent Campaigns</h2>
+              <p>Open a saved campaign and keep working.</p>
             </div>
           </div>
           <div class="recent-list" id="recentList"></div>
@@ -980,6 +995,8 @@
           </div>
         </aside>
       </div>
+
+      <p class="made-by">Built by <a href="https://github.com/Adamdesgns" target="_blank" rel="noopener">@AdamDesgns</a> · Powered by your OpenAI key</p>
     </main>
   </div>
 
@@ -987,7 +1004,7 @@
     <div class="modal">
       <div class="modal-header">
         <div>
-          <h2>Start a New Project</h2>
+          <h2>Start a Campaign</h2>
           <p id="wizardSubtitle">Pick a generator, add the idea, then set the goal.</p>
         </div>
         <button class="btn icon ghost" id="closeWizardBtn" aria-label="Close">✕</button>
@@ -1022,7 +1039,7 @@
         <div class="wizard-step hidden" data-step="2">
           <div class="form-grid">
             <div class="field full">
-              <label>Project name <span class="hint">Optional. We can name it from the topic.</span></label>
+              <label>Campaign name <span class="hint">Optional. We can name it from the topic.</span></label>
               <input id="projectNameInput" placeholder="Example: JARVIS giveaway carousel" />
             </div>
             <div class="field full">
@@ -1112,20 +1129,20 @@
     <div class="workspace-top">
       <button class="btn icon ghost" id="closeWorkspaceBtn" title="Back">←</button>
       <div class="workspace-title">
-        <strong id="workspaceTitle">Project</strong>
+        <strong id="workspaceTitle">Campaign</strong>
         <span id="workspaceSubtitle">Instagram · Carousel Forge</span>
       </div>
       <div class="workspace-actions">
         <button class="btn small" id="copyPromptBtn"><span>Copy Prompt</span></button>
         <button class="btn small" id="downloadPromptBtn"><span>Download .txt</span></button>
-        <button class="btn primary small" id="saveProjectBtn"><span>Save Project</span></button>
+        <button class="btn primary small" id="saveProjectBtn"><span>Save Campaign</span></button>
       </div>
     </div>
 
     <div class="workspace-grid">
       <aside class="workspace-card">
         <div class="workspace-card-header">
-          <strong>Project Brief</strong>
+          <strong>Campaign Brief</strong>
           <span>The source information behind every version.</span>
         </div>
         <div class="workspace-scroll">
@@ -1154,8 +1171,8 @@
 
     <section class="ai-studio" id="aiStudio">
       <div class="ai-studio-head">
-        <strong>AI Studio</strong>
-        <span>Generate finished copy and images with OpenAI.</span>
+        <strong>Generate</strong>
+        <span>Finished copy and images, written and rendered for you.</span>
       </div>
       <div id="studioBody">
         <div class="studio-actions">
@@ -1171,11 +1188,11 @@
 
     <section class="ai-studio" id="publishStudio">
       <div class="ai-studio-head">
-        <strong>Publish Studio</strong>
-        <span>One post, adapted and launched to every network.</span>
+        <strong>Launch</strong>
+        <span>Adapted to every major platform. One tap to post.</span>
       </div>
       <div class="studio-actions">
-        <button class="btn small" id="pubPullBtn">Pull from AI Studio</button>
+        <button class="btn small" id="pubPullBtn">Use generated text</button>
       </div>
       <textarea class="pub-text" id="pubText" spellcheck="false" placeholder="Paste or pull the finished post text here. Trailing #hashtag lines are detected and trimmed per network."></textarea>
       <div class="pub-grid" id="pubGrid"></div>
@@ -1250,7 +1267,7 @@
       <div class="modal-header">
         <div>
           <h2>Brand Settings</h2>
-          <p>Defaults used when a new project starts.</p>
+          <p>Defaults used when a new campaign starts.</p>
         </div>
         <button class="btn icon ghost" data-close-modal="settingsBackdrop">✕</button>
       </div>
@@ -2024,8 +2041,8 @@
 
     function renderMode() {
       $('#appName').textContent = 'Content Forge';
-      $('#appSubtitle').textContent = 'Platform-first content workstation';
-      $('#heroEyebrow').textContent = 'Content Forge System';
+      $('#appSubtitle').textContent = 'Create once. Publish everywhere.';
+      $('#heroEyebrow').textContent = 'Create once. Publish everywhere.';
     }
 
     function renderPlatformTabs() {
@@ -2060,8 +2077,16 @@
 
     function renderRecent() {
       const projects = [...state.projects].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 7);
+      const continueBtn = $('#continueCampaignBtn');
+      if (projects.length) {
+        continueBtn.textContent = 'Continue: ' + (projects[0].name.length > 26 ? projects[0].name.slice(0, 25).trimEnd() + '…' : projects[0].name);
+        continueBtn.dataset.projectId = projects[0].id;
+        continueBtn.classList.remove('hidden');
+      } else {
+        continueBtn.classList.add('hidden');
+      }
       if (!projects.length) {
-        $('#recentList').innerHTML = `<div class="recent-empty">No projects yet.<br>Start with an Instagram carousel or choose a platform generator.</div>`;
+        $('#recentList').innerHTML = `<div class="recent-empty">No campaigns yet.<br>Start with an Instagram carousel or choose a platform generator.</div>`;
         return;
       }
       $('#recentList').innerHTML = projects.map((project) => `
@@ -2199,12 +2224,12 @@
         indicator.classList.toggle('done', number < wizard.step);
       });
       $('#wizardBackBtn').textContent = wizard.step === 1 ? 'Cancel' : 'Back';
-      $('#wizardNextBtn').textContent = wizard.step === 3 ? 'Create Project' : 'Next';
+      $('#wizardNextBtn').textContent = wizard.step === 3 ? 'Create Campaign' : 'Next';
       const generator = getGenerator(wizard.platform, wizard.generator);
       $('#wizardSubtitle').textContent = wizard.step === 1
         ? 'Pick the platform, generator, writing prompt, and image prompt.'
         : wizard.step === 2
-          ? `Add the source material for ${generator?.title || 'this project'}.`
+          ? `Add the source material for ${generator?.title || 'this campaign'}.`
           : 'Set the audience, goal, CTA, and platform adaptations.';
     }
 
@@ -2577,7 +2602,7 @@ ${buildSelectedPromptLayers(project)}`;
       closeWizard();
       renderRecent();
       openProject(project.id);
-      showToast('Project created and saved.');
+      showToast('Campaign created and saved.');
     }
 
     function buildBriefOnly(project) {
@@ -2687,7 +2712,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
       activeProject.updatedAt = Date.now();
       await saveState();
       renderRecent();
-      showToast('Project saved.');
+      showToast('Campaign saved.');
     }
 
     /* ---------- AI Studio (OpenAI generation) ---------- */
@@ -2915,6 +2940,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
     }
 
     $('#newProjectBtn').addEventListener('click', () => openWizard());
+    $('#continueCampaignBtn').addEventListener('click', (event) => { const id = event.currentTarget.dataset.projectId; if (id) openProject(id); });
     $('#startPlatformBtn').addEventListener('click', () => openWizard(state.selectedPlatform));
     $('#quickCarouselBtn').addEventListener('click', () => openWizard('instagram', 'carousel-forge'));
     $('#closeWizardBtn').addEventListener('click', closeWizard);
@@ -3045,11 +3071,11 @@ Return three concepts, rank them, then provide the final image-generation prompt
     });
     $('#pubPullBtn').addEventListener('click', () => {
       const generated = $('#genTextOutput').innerText.trim();
-      if (!generated) { showToast('Nothing in AI Studio yet — generate or paste text first.'); return; }
+      if (!generated) { showToast('Nothing generated yet — generate or paste text first.'); return; }
       $('#pubText').value = generated;
       if (activeProject) activeProject.publishText = generated;
       renderPublishStudio();
-      showToast('Pulled AI Studio text into Publish Studio.');
+      showToast('Pulled your generated text into Launch.');
     });
     $('#publishStudio').addEventListener('click', async (event) => {
       const button = event.target.closest('button[data-pub-copy], button[data-pub-open]');

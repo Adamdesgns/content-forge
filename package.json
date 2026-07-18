@@ -1,6 +1,6 @@
 {
   "name": "content-forge-desktop",
-  "version": "0.9.0",
+  "version": "1.0.0-beta.1",
   "description": "Platform-first desktop content generator with AI Studio.",
   "main": "main.js",
   "author": "Content Forge",

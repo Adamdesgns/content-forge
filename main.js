@@ -62,7 +62,7 @@ function createMenu() {
       label: 'File',
       submenu: [
         {
-          label: 'Start a New Project',
+          label: 'Start a Campaign',
           accelerator: 'CmdOrCtrl+N',
           click: (_item, win) => win?.webContents.send('menu:new-project')
         },
