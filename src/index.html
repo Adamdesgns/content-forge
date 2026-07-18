@@ -724,6 +724,16 @@
     .spec-box ul { margin: 0; padding-left: 18px; color: #c7c7cc; font-size: 12px; line-height: 1.5; }
     .spec-box li + li { margin-top: 4px; }
 
+    /* Lock screen (invite-only gate) */
+    .lock-screen { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(1200px 800px at 50% -10%, #12151b 0%, var(--bg) 70%); }
+    .lock-screen.hidden { display: none; }
+    .lock-card { width: min(360px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 32px 26px; text-align: center; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+    .lock-card .brand-mark { margin: 0 auto 6px; }
+    .lock-card h1 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+    .lock-card p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+    .lock-card input { width: 100%; min-height: 44px; }
+    .lock-error { color: #ff6b6b; font-size: 12.5px; min-height: 16px; }
+
     /* AI settings + Studio */
     .settings-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
     .settings-section h3 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.02em; }
@@ -858,6 +868,18 @@
   </style>
 </head>
 <body>
+  <div class="lock-screen" id="lockScreen">
+    <form class="lock-card" id="lockForm" autocomplete="off">
+      <div class="brand-mark">CF</div>
+      <h1>Content Forge</h1>
+      <p>Invite only. Enter your credentials to continue.</p>
+      <input id="lockUser" type="text" placeholder="Username" autocomplete="username" spellcheck="false" />
+      <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password" />
+      <button class="btn primary" type="submit">Unlock</button>
+      <div class="lock-error" id="lockError"></div>
+    </form>
+  </div>
+
   <div class="app-shell" id="appShell">
     <header class="topbar">
       <div class="window-controls" aria-hidden="true">
@@ -1263,6 +1285,33 @@
           navigator.serviceWorker.register('service-worker.js').catch((e) => console.warn('SW registration failed', e));
         });
       }
+    })();
+
+    /* ---------- Invite-only gate ----------
+       Client-side lock: keeps casual/public visitors out. Credentials are
+       stored only as a SHA-256 hash so the plain password isn't in the code.
+       Username is case-insensitive; password is case-sensitive. */
+    function cfSha256(ascii){function rr(v,a){return (v>>>a)|(v<<(32-a));}var mp=Math.pow;var mw=mp(2,32);var result='';var words=[];var bl=ascii.length*8;var hash=cfSha256.h=cfSha256.h||[];var k=cfSha256.k=cfSha256.k||[];var pc=k.length;var ic={};for(var cand=2;pc<64;cand++){if(!ic[cand]){for(var i=0;i<313;i+=cand){ic[i]=cand;}hash[pc]=(mp(cand,.5)*mw)|0;k[pc++]=(mp(cand,1/3)*mw)|0;}}ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';for(var i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8;}words[words.length]=((bl/mw)|0);words[words.length]=(bl);for(var j=0;j<words.length;){var w=words.slice(j,j+=16);var oh=hash;hash=hash.slice(0,8);for(var i=0;i<64;i++){var w15=w[i-15],w2=w[i-2];var a=hash[0],e=hash[4];var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=i<16?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;}for(var i=0;i<8;i++){hash[i]=(hash[i]+oh[i])|0;}}for(var i=0;i<8;i++){for(var j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16);}}return result;}
+    const CF_AUTH_HASH = '502b1176fe3c0a0efede0d60f6b074b47740248f257e12efc2df3eb85d73debd';
+    (function initLock(){
+      const lock = document.getElementById('lockScreen');
+      if (!lock) return;
+      let unlocked = false;
+      try { unlocked = localStorage.getItem('cfUnlocked') === CF_AUTH_HASH; } catch (e) { /* ignore */ }
+      if (unlocked) { lock.classList.add('hidden'); return; }
+      const form = document.getElementById('lockForm');
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const user = (document.getElementById('lockUser').value || '').trim().toLowerCase();
+        const pass = document.getElementById('lockPass').value || '';
+        if (cfSha256(user + ':' + pass) === CF_AUTH_HASH) {
+          try { localStorage.setItem('cfUnlocked', CF_AUTH_HASH); } catch (e) { /* ignore */ }
+          lock.classList.add('hidden');
+        } else {
+          document.getElementById('lockError').textContent = 'Incorrect username or password.';
+        }
+      });
+      document.getElementById('lockUser').focus();
     })();
 
     const PLATFORM_DATA = {
