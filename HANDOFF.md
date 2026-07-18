@@ -82,6 +82,13 @@ Behavior once configured: user pastes license key → app calls LS `activate` (s
 5. **Rebuild the .exe:** trigger the **build-windows.yml** workflow (workflow_dispatch or push a `v*` tag). It compiles on `windows-latest` and republishes both .exe files to the `desktop-latest` release (it deletes+recreates the release so only current-named files remain).
 6. **Republish the artifact:** re-run the Artifact tool on `artifact/content-forge.html` (keeps the same URL).
 
+## 7a. GitHub push access (there is no shared credential)
+Push access is **not** a token stored in this repo or handoff — for security it never should be. You get write access one of these ways:
+- **Another Claude Code session:** tell it to *add the repo `Adamdesgns/content-forge`* — the session grants its own push access automatically; no token needed.
+- **Your own machine:** authenticate as yourself — `gh auth login` (GitHub CLI), **or** create a fine-grained Personal Access Token (GitHub → Settings → Developer settings → Personal access tokens → give it `content-forge` **Contents: Read/write**) and use it as the git password, **or** add an SSH key.
+
+Never paste a GitHub token or password into a chat or commit it to the repo.
+
 ## 8. Known constraints / gotchas
 - The **GitHub App integration cannot create repos or enable Pages** (403 "Resource not accessible by integration"). Pages was enabled once by the owner; deploys happen via manual `gh-pages` branch pushes, not the Actions Pages job.
 - **Free-plan GitHub Pages requires a public repo.** Making the repo private kills the web link and gates release downloads — decision deferred.
