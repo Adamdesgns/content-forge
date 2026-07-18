@@ -30,3 +30,15 @@ jobs:
             --title "Content Forge — Desktop" \
             --notes "Windows desktop app. Download the Setup .exe, run it, and click More info -> Run anyway if SmartScreen warns (the app is unsigned). Includes the AI Studio for OpenAI text + image generation."
           gh release upload desktop-latest release/*.exe --clobber --repo "$GITHUB_REPOSITORY"
+      - name: Publish versioned release (clean history per version)
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v$VERSION"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+                 --title "Content Forge $TAG" \
+                 --notes "Content Forge $TAG desktop build. Download the Setup .exe and run it (click More info -> Run anyway if SmartScreen warns)."
+          gh release upload "$TAG" release/*.exe --clobber --repo "$GITHUB_REPOSITORY"
