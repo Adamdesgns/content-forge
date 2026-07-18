@@ -25,8 +25,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view desktop-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
-            || gh release create desktop-latest --repo "$GITHUB_REPOSITORY" \
-                 --title "Content Forge — Desktop" \
-                 --notes "Windows desktop app. Download the Setup .exe, run it, and click More info -> Run anyway if SmartScreen warns (the app is unsigned). Includes the AI Studio for OpenAI text + image generation."
+          gh release delete desktop-latest --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+          gh release create desktop-latest --repo "$GITHUB_REPOSITORY" \
+            --title "Content Forge — Desktop" \
+            --notes "Windows desktop app. Download the Setup .exe, run it, and click More info -> Run anyway if SmartScreen warns (the app is unsigned). Includes the AI Studio for OpenAI text + image generation."
           gh release upload desktop-latest release/*.exe --clobber --repo "$GITHUB_REPOSITORY"
