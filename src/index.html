@@ -1271,6 +1271,15 @@
             </div>
           </div>
         </div>
+
+        <div class="settings-section">
+          <h3>Account</h3>
+          <p class="settings-hint" id="accountStatus"></p>
+          <div class="studio-actions">
+            <button type="button" class="btn small hidden" id="manageSubBtn">Manage subscription</button>
+            <button type="button" class="btn ghost small" id="logoutBtn">Log out / deactivate device</button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <span></span>
@@ -1320,6 +1329,7 @@
       storeId: '__LS_STORE_ID__',        // e.g. '123456'
       productId: '__LS_PRODUCT_ID__',    // the product/variant id sold
       checkoutUrl: '__LS_CHECKOUT_URL__',// "Start free trial" checkout link
+      portalUrl: 'https://app.lemonsqueezy.com/my-orders', // where customers manage/cancel
       offlineGraceDays: 7,               // keep working offline this long between checks
       revalidateEveryHours: 12           // re-verify with the server at most this often
     };
@@ -2831,6 +2841,33 @@ Return three concepts, rank them, then provide the final image-generation prompt
       $('#settingsTextModel').value = settings.textModel;
       $('#settingsImageModel').value = settings.imageModel;
       $('#settingsImageSize').value = settings.imageSize;
+      renderAccount();
+    }
+
+    function renderAccount() {
+      const status = $('#accountStatus');
+      const manageBtn = $('#manageSubBtn');
+      if (LICENSING_CONFIGURED) {
+        const lic = lsGetLicense();
+        status.textContent = (lic && lic.key) ? 'Subscription active on this device.' : 'No subscription on this device.';
+        manageBtn.classList.remove('hidden');
+        manageBtn.onclick = () => window.open(LICENSING.portalUrl, '_blank', 'noopener');
+      } else {
+        status.textContent = 'Invite access on this device.';
+        manageBtn.classList.add('hidden');
+      }
+    }
+
+    async function logOut() {
+      const lic = lsGetLicense();
+      // Best effort: free this device's activation slot so the seat can be reused.
+      try {
+        if (LICENSING_CONFIGURED && lic && lic.key && lic.instanceId) {
+          await lsCall('deactivate', { license_key: lic.key, instance_id: lic.instanceId });
+        }
+      } catch (e) { /* offline is fine — still log out locally */ }
+      try { localStorage.removeItem('cfLicense'); localStorage.removeItem('cfUnlocked'); } catch (e) { /* ignore */ }
+      location.reload();
     }
 
     function renderAll() {
@@ -2891,6 +2928,12 @@ Return three concepts, rank them, then provide the final image-generation prompt
 
     $('#promptLibraryBtn').addEventListener('click', () => $('#libraryBackdrop').classList.remove('hidden'));
     $('#settingsBtn').addEventListener('click', () => { renderSettings(); $('#settingsBackdrop').classList.remove('hidden'); });
+    $('#logoutBtn').addEventListener('click', () => {
+      const msg = LICENSING_CONFIGURED
+        ? 'Log out and deactivate this device? You can activate again with your license key.'
+        : 'Log out of this device?';
+      if (confirm(msg)) logOut();
+    });
     $$('[data-close-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.closeModal}`).classList.add('hidden')));
     $$('[data-open-prompt]').forEach((button) => button.addEventListener('click', () => openLibraryPrompt(button.dataset.openPrompt)));
     $('#copyLibraryPromptBtn').addEventListener('click', async () => { await copyText($('#libraryPromptText').value); showToast('Library prompt copied.'); });
