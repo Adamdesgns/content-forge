@@ -7,7 +7,7 @@ Paste this into a new chat to pick up where we left off. It's the map of everyth
 ## 1. What it is
 **Content Forge** — a platform-first content workstation. You pick a social platform, choose a generator, add a brief/images, and it builds ready-to-use prompts **and** (with an OpenAI key) generates finished copy and images. Access is gated (invite password now, subscription licensing when configured).
 
-- **Version:** 0.8.0
+- **Version:** 0.9.0
 - **Owner / GitHub:** `Adamdesgns`
 - **One-line pitch:** turn one idea into a finished caption + image, on phone or desktop.
 
@@ -46,6 +46,7 @@ web/ , artifact/       ← generated build outputs (gitignored)
   - **Password mode** (current default): username `AdamDesgns` (case-insensitive) / password `Password1` (temporary). Verified against a SHA-256 hash in the code (`CF_AUTH_HASH`), so plaintext isn't stored.
   - **Licensed mode** (Lemon Squeezy) — active once configured (see #6).
 - **Account section** in Settings: subscription status, **Manage subscription** (customer portal), **Log out / deactivate device** (frees the LS activation slot, best-effort, then relocks).
+- **Publish Studio** (in each project, below AI Studio): one post text box (auto-filled from AI Studio output, editable, saved on the project as `publishText`) + a card per network — **11 networks**: the app's 6 plus LinkedIn, Pinterest, Reddit, Bluesky, Snapchat. Each card live-adapts the text to that network's rules (char limit, hashtag caps — trailing `#tag` lines are detected; tags are dropped before the body is ever truncated, truncation is word-boundary), shows count/status, and offers **Copy** + **Open**. Open launches the real network's composer as a popup docked to the right of the screen; X/Threads/Bluesky/Reddit/LinkedIn arrive **pre-filled via URL intents**, the rest auto-copy first so it's one paste. Code: `PUBLISH_NETWORKS` registry + `adaptForNetwork` + `publishLaunch` in `src/index.html`.
 - **Three distributions from one codebase:** desktop (.exe), installable PWA (web link), single-file artifact.
 
 ## 5. Access / credentials

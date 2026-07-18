@@ -758,6 +758,23 @@
     .gen-img .btn { border-radius: 0; border: 0; border-top: 1px solid var(--line); }
     .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.25); border-top-color: var(--blue); border-radius: 50%; display: inline-block; vertical-align: -2px; margin-right: 7px; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Publish Studio */
+    .pub-text { width: 100%; min-height: 110px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #0b0d11; color: var(--text); font-size: 14px; line-height: 1.55; resize: vertical; font-family: inherit; box-sizing: border-box; }
+    .pub-text:focus { outline: none; border-color: var(--gold); }
+    .pub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 10px; margin-top: 14px; }
+    .pub-card { border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.03); padding: 11px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .pub-card-top { display: flex; align-items: center; gap: 7px; }
+    .pub-card-top strong { font-size: 13px; }
+    .pub-badge { margin-left: auto; font-size: 10px; font-weight: 850; letter-spacing: .03em; padding: 2px 8px; border-radius: 99px; background: rgba(255,255,255,.08); color: var(--muted); white-space: nowrap; }
+    .pub-badge.pre { background: rgba(102,209,143,.14); color: var(--green); }
+    .pub-count { font-size: 11px; font-variant-numeric: tabular-nums; }
+    .pub-count.ok { color: var(--green); }
+    .pub-count.warn { color: var(--orange); }
+    .pub-count.over { color: var(--red); }
+    .pub-count small { color: var(--muted); font-weight: 400; }
+    .pub-actions { display: flex; gap: 7px; margin-top: auto; }
+    .pub-actions .btn { flex: 1; }
     @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
 
     /* ============================================================
@@ -1150,6 +1167,18 @@
         <div class="studio-output" id="genTextOutput" contenteditable="true" spellcheck="false"></div>
         <div class="image-grid" id="genImageGrid"></div>
       </div>
+    </section>
+
+    <section class="ai-studio" id="publishStudio">
+      <div class="ai-studio-head">
+        <strong>Publish Studio</strong>
+        <span>One post, adapted and launched to every network.</span>
+      </div>
+      <div class="studio-actions">
+        <button class="btn small" id="pubPullBtn">Pull from AI Studio</button>
+      </div>
+      <textarea class="pub-text" id="pubText" spellcheck="false" placeholder="Paste or pull the finished post text here. Trailing #hashtag lines are detected and trimmed per network."></textarea>
+      <div class="pub-grid" id="pubGrid"></div>
     </section>
   </section>
 
@@ -2565,6 +2594,8 @@ ${buildSelectedPromptLayers(project)}`;
       renderProjectDetails();
       renderAdaptations();
       renderStudio();
+      $('#pubText').value = activeProject.publishText || activeProject.generatedText || '';
+      renderPublishStudio();
       $$('.editor-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.editorView === 'prompt'));
       $('#workspace').classList.remove('hidden');
     }
@@ -2652,6 +2683,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
       if (!activeProject) return;
       if (activeEditorView === 'prompt') activeProject.prompt = $('#promptEditor').value;
       activeProject.generatedText = $('#genTextOutput').innerText.trim();
+      activeProject.publishText = $('#pubText').value;
       activeProject.updatedAt = Date.now();
       await saveState();
       renderRecent();
@@ -2738,6 +2770,11 @@ Return three concepts, rank them, then provide the final image-generation prompt
         const text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
         $('#genTextOutput').innerText = text || '(No text returned.)';
         activeProject.generatedText = text;
+        if (text && !$('#pubText').value.trim()) {
+          $('#pubText').value = text;
+          activeProject.publishText = text;
+          renderPublishStudio();
+        }
         await saveState();
         setStudioStatus('Done. Edit above if needed, then Save Project.');
       } catch (error) {
@@ -2911,6 +2948,121 @@ Return three concepts, rank them, then provide the final image-generation prompt
     $('#copyPromptBtn').addEventListener('click', async () => { await copyText($('#promptEditor').value); showToast('Prompt copied.'); });
     $('#downloadPromptBtn').addEventListener('click', () => { if (activeProject) downloadText(`${slugify(activeProject.name)}.txt`, $('#promptEditor').value); });
     $('#saveProjectBtn').addEventListener('click', saveActiveProject);
+    /* ---------- Publish Studio (SocialBridge — adapt + docked launch for every network) ---------- */
+    const PUBLISH_NETWORKS = {
+      instagram: { name: 'Instagram', icon: '◎', charLimit: 2200, tagLimit: 30, composer: 'https://www.instagram.com/', intent: null },
+      tiktok:    { name: 'TikTok', icon: '♪', charLimit: 2200, tagLimit: Infinity, composer: 'https://www.tiktok.com/upload', intent: null },
+      youtube:   { name: 'YouTube', icon: '▶', charLimit: 5000, tagLimit: Infinity, titleField: 100, composer: 'https://studio.youtube.com/', intent: null },
+      x:         { name: 'X', icon: '𝕏', charLimit: 280, tagLimit: Infinity, composer: 'https://x.com/compose/post', intent: (t) => 'https://x.com/intent/post?text=' + encodeURIComponent(t) },
+      facebook:  { name: 'Facebook', icon: 'f', charLimit: 63206, tagLimit: Infinity, composer: 'https://www.facebook.com/', intent: null },
+      linkedin:  { name: 'LinkedIn', icon: 'in', charLimit: 3000, tagLimit: 5, composer: 'https://www.linkedin.com/feed/?shareActive=true', intent: (t) => 'https://www.linkedin.com/feed/?shareActive=true&text=' + encodeURIComponent(t) },
+      threads:   { name: 'Threads', icon: '@', charLimit: 500, tagLimit: 1, composer: 'https://www.threads.net/', intent: (t) => 'https://www.threads.net/intent/post?text=' + encodeURIComponent(t) },
+      pinterest: { name: 'Pinterest', icon: '◉', charLimit: 500, tagLimit: Infinity, titleField: 100, composer: 'https://www.pinterest.com/pin-creation-tool/', intent: null },
+      reddit:    { name: 'Reddit', icon: '☉', charLimit: 40000, tagLimit: 0, titleField: 300, composer: 'https://www.reddit.com/submit', intent: (t) => 'https://www.reddit.com/submit?title=' + encodeURIComponent(t.split('\n')[0].slice(0, 300)) },
+      bluesky:   { name: 'Bluesky', icon: '⋈', charLimit: 300, tagLimit: Infinity, composer: 'https://bsky.app/', intent: (t) => 'https://bsky.app/intent/compose?text=' + encodeURIComponent(t) },
+      snapchat:  { name: 'Snapchat', icon: '⌐', charLimit: 250, tagLimit: 3, composer: 'https://web.snapchat.com/', intent: null }
+    };
+
+    function splitTrailingTags(text) {
+      const lines = String(text || '').trimEnd().split('\n');
+      const tags = [];
+      while (lines.length) {
+        const line = lines[lines.length - 1].trim();
+        if (!line) { lines.pop(); continue; }
+        const words = line.split(/\s+/);
+        if (words.every((word) => word.startsWith('#'))) { tags.unshift(...words); lines.pop(); }
+        else break;
+      }
+      return { body: lines.join('\n').trimEnd(), tags };
+    }
+
+    function truncateAtWord(text, max) {
+      if (text.length <= max) return text;
+      let cut = text.slice(0, max - 1);
+      const space = cut.lastIndexOf(' ');
+      if (space > max * 0.6) cut = cut.slice(0, space);
+      return cut.trimEnd() + '…';
+    }
+
+    function adaptForNetwork(key, sourceText) {
+      const net = PUBLISH_NETWORKS[key];
+      const { body, tags: allTags } = splitTrailingTags(sourceText);
+      let tags = net.tagLimit === 0 ? [] : allTags.slice(0, net.tagLimit === Infinity ? allTags.length : net.tagLimit);
+      const build = (tagList) => body + (tagList.length ? '\n\n' + tagList.join(' ') : '');
+      let text = build(tags);
+      while (text.length > net.charLimit && tags.length) { tags = tags.slice(0, -1); text = build(tags); }
+      if (text.length > net.charLimit) text = truncateAtWord(text, net.charLimit);
+      const status = text.length > net.charLimit ? 'over' : text.length > net.charLimit * 0.92 ? 'warn' : 'ok';
+      const title = net.titleField ? truncateAtWord(body.split('\n')[0] || '', net.titleField) : null;
+      return { key, text, title, count: text.length, limit: net.charLimit, status, tagsDropped: allTags.length - tags.length };
+    }
+
+    const publishWindows = {};
+    async function publishLaunch(key) {
+      const net = PUBLISH_NETWORKS[key];
+      const source = $('#pubText').value.trim();
+      let url = net.composer;
+      let prefilled = false;
+      if (source) {
+        const adapted = adaptForNetwork(key, source);
+        if (net.intent) { url = net.intent(adapted.text); prefilled = true; }
+        else await copyText(adapted.text);
+      }
+      const sw = window.screen.availWidth;
+      const sh = window.screen.availHeight;
+      const width = Math.min(620, Math.round(sw * 0.42));
+      const height = Math.round(sh * 0.92);
+      const win = window.open(url, 'cf_pub_' + key, `width=${width},height=${height},left=${sw - width - 8},top=8`);
+      if (!win) { showToast('Pop-up blocked — allow pop-ups for Content Forge, then tap again.'); return; }
+      publishWindows[key] = win;
+      try { window.resizeTo(sw - width - 16, sh); window.moveTo(0, 0); } catch (error) { /* not resizable in this context */ }
+      showToast(net.name + (prefilled ? ' opened with your post prefilled.' : source ? ' opened — text copied, just paste.' : ' opened.'));
+    }
+
+    function renderPublishStudio() {
+      const source = $('#pubText').value.trim();
+      $('#pubGrid').innerHTML = Object.keys(PUBLISH_NETWORKS).map((key) => {
+        const net = PUBLISH_NETWORKS[key];
+        const adapted = source ? adaptForNetwork(key, source) : null;
+        const count = adapted
+          ? `<span class="pub-count ${adapted.status}">${adapted.count} / ${net.charLimit}${adapted.tagsDropped > 0 ? ` <small>· ${adapted.tagsDropped} tag${adapted.tagsDropped > 1 ? 's' : ''} trimmed</small>` : ''}</span>`
+          : '<span class="pub-count"><small>Add post text above</small></span>';
+        return `
+          <div class="pub-card">
+            <div class="pub-card-top"><strong>${net.icon} ${net.name}</strong><span class="pub-badge ${net.intent ? 'pre' : ''}">${net.intent ? 'auto-prefill' : 'copy & paste'}</span></div>
+            ${count}
+            <div class="pub-actions">
+              <button class="btn small" data-pub-copy="${key}" ${source ? '' : 'disabled'}>Copy</button>
+              <button class="btn primary small" data-pub-open="${key}">Open</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    $('#pubText').addEventListener('input', () => {
+      if (activeProject) activeProject.publishText = $('#pubText').value;
+      renderPublishStudio();
+    });
+    $('#pubPullBtn').addEventListener('click', () => {
+      const generated = $('#genTextOutput').innerText.trim();
+      if (!generated) { showToast('Nothing in AI Studio yet — generate or paste text first.'); return; }
+      $('#pubText').value = generated;
+      if (activeProject) activeProject.publishText = generated;
+      renderPublishStudio();
+      showToast('Pulled AI Studio text into Publish Studio.');
+    });
+    $('#publishStudio').addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-pub-copy], button[data-pub-open]');
+      if (!button) return;
+      if (button.dataset.pubCopy) {
+        const adapted = adaptForNetwork(button.dataset.pubCopy, $('#pubText').value.trim());
+        await copyText(adapted.text);
+        showToast(PUBLISH_NETWORKS[button.dataset.pubCopy].name + ' version copied.');
+      } else if (button.dataset.pubOpen) {
+        publishLaunch(button.dataset.pubOpen);
+      }
+    });
+
     $('#aiStudio').addEventListener('click', (event) => {
       const button = event.target.closest('button');
       if (!button) return;
