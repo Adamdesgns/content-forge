@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Lucedale Content Forge</title>
+  <title>Content Forge</title>
   <!-- PWA / mobile (inert under Electron file://, active when served over http/https) -->
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#08090b" />
@@ -482,7 +482,7 @@
     }
 
 
-    /* v0.5 macOS-inspired dark / X visual system */
+    /* Dark workspace visual system */
     :root {
       --bg: #000000;
       --surface: rgba(18,18,18,.86);
@@ -868,14 +868,9 @@
       <div class="brand">
         <div class="brand-mark">CF</div>
         <div>
-          <div class="brand-name" id="appName">Lucedale Content Forge</div>
-          <div class="brand-sub" id="appSubtitle">macOS workspace · X-dark edition</div>
+          <div class="brand-name" id="appName">Content Forge</div>
+          <div class="brand-sub" id="appSubtitle">Platform-first content workstation</div>
         </div>
-      </div>
-
-      <div class="mode-toggle" aria-label="App mode">
-        <button class="active" data-mode="lucedale">Lucedale</button>
-        <button data-mode="anvil">Anvil Module</button>
       </div>
 
       <div class="top-actions">
@@ -888,7 +883,7 @@
     <main class="page">
       <section class="hero">
         <div>
-          <div class="eyebrow" id="heroEyebrow">Lucedale Logo Content System</div>
+          <div class="eyebrow" id="heroEyebrow">Content Forge System</div>
           <h1 id="heroTitle">What are we making?</h1>
           <p id="heroDescription">Choose a platform, pick the right generator, add a brief or reference image, and build a reusable content project.</p>
         </div>
@@ -992,7 +987,7 @@
           <div class="form-grid">
             <div class="field">
               <label>Brand</label>
-              <input id="brandInput" value="Lucedale Logo" />
+              <input id="brandInput" value="Your Brand" />
             </div>
             <div class="field">
               <label>Audience</label>
@@ -1030,7 +1025,7 @@
             </div>
             <div class="field">
               <label>Handle</label>
-              <input id="handleInput" placeholder="@lucedalelogo" />
+              <input id="handleInput" placeholder="@yourbrand" />
             </div>
             <div class="field full">
               <label>Prepare adaptations</label>
@@ -1678,11 +1673,10 @@
 
     const DEFAULT_STATE = {
       version: 6,
-      mode: 'lucedale',
       selectedPlatform: 'instagram',
       brand: {
-        name: 'Lucedale Logo',
-        handle: '@lucedalelogo',
+        name: 'Your Brand',
+        handle: '',
         audience: 'Local business owners and creators',
         rules: 'Use direct language. Keep copy easy to paste. Avoid em dashes. End with a clear action when appropriate.'
       },
@@ -1815,11 +1809,9 @@
     }
 
     function renderMode() {
-      $$('.mode-toggle button').forEach((button) => button.classList.toggle('active', button.dataset.mode === state.mode));
-      const isAnvil = state.mode === 'anvil';
-      $('#appName').textContent = isAnvil ? 'Anvil Content Forge' : 'Lucedale Content Forge';
-      $('#appSubtitle').textContent = isAnvil ? 'macOS workspace · Anvil growth module' : 'macOS workspace · X-dark edition';
-      $('#heroEyebrow').textContent = isAnvil ? 'Anvil Growth Module' : 'Lucedale Logo Content System';
+      $('#appName').textContent = 'Content Forge';
+      $('#appSubtitle').textContent = 'Platform-first content workstation';
+      $('#heroEyebrow').textContent = 'Content Forge System';
     }
 
     function renderPlatformTabs() {
@@ -2703,12 +2695,6 @@ Return three concepts, rank them, then provide the final image-generation prompt
     $('#uploadZone').addEventListener('click', () => $('#imageInput').click());
     $('#imageInput').addEventListener('change', async (event) => { await handleImageFiles(event.target.files); event.target.value = ''; });
 
-    $$('.mode-toggle button').forEach((button) => button.addEventListener('click', async () => {
-      state.mode = button.dataset.mode;
-      await saveState();
-      renderMode();
-    }));
-
     $('#closeWorkspaceBtn').addEventListener('click', () => { $('#workspace').classList.add('hidden'); activeProject = null; });
     $('#copyPromptBtn').addEventListener('click', async () => { await copyText($('#promptEditor').value); showToast('Prompt copied.'); });
     $('#downloadPromptBtn').addEventListener('click', () => { if (activeProject) downloadText(`${slugify(activeProject.name)}.txt`, $('#promptEditor').value); });
@@ -2735,7 +2721,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
     $('#copyLibraryPromptBtn').addEventListener('click', async () => { await copyText($('#libraryPromptText').value); showToast('Library prompt copied.'); });
     $('#saveSettingsBtn').addEventListener('click', async () => {
       state.brand = {
-        name: $('#settingsBrand').value.trim() || 'Lucedale Logo',
+        name: $('#settingsBrand').value.trim() || 'Your Brand',
         handle: $('#settingsHandle').value.trim(),
         audience: $('#settingsAudience').value.trim(),
         rules: $('#settingsRules').value.trim()

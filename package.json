@@ -1,9 +1,9 @@
 {
-  "name": "lucedale-content-forge-desktop",
+  "name": "content-forge-desktop",
   "version": "0.8.0",
-  "description": "Simple platform-first desktop content generator for Lucedale Logo and the Anvil Content Forge module.",
+  "description": "Platform-first desktop content generator with AI Studio.",
   "main": "main.js",
-  "author": "Lucedale Logo",
+  "author": "Content Forge",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
@@ -17,8 +17,8 @@
     "build:artifact": "node scripts/build-artifact.js"
   },
   "build": {
-    "appId": "com.lucedalelogo.contentforge",
-    "productName": "Lucedale Content Forge",
+    "appId": "com.contentforge.app",
+    "productName": "Content Forge",
     "files": [
       "main.js",
       "preload.js",

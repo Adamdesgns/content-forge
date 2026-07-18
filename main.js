@@ -32,7 +32,7 @@ function createWindow() {
     height: 920,
     minWidth: 1040,
     minHeight: 700,
-    title: 'Lucedale Content Forge',
+    title: 'Content Forge',
     icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#000000',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',

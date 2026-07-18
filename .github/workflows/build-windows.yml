@@ -27,6 +27,6 @@ jobs:
         run: |
           gh release view desktop-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
             || gh release create desktop-latest --repo "$GITHUB_REPOSITORY" \
-                 --title "Lucedale Content Forge — Desktop" \
+                 --title "Content Forge — Desktop" \
                  --notes "Windows desktop app. Download the Setup .exe, run it, and click More info -> Run anyway if SmartScreen warns (the app is unsigned). Includes the AI Studio for OpenAI text + image generation."
           gh release upload desktop-latest release/*.exe --clobber --repo "$GITHUB_REPOSITORY"

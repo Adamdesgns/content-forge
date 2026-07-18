@@ -1,6 +1,6 @@
-# Lucedale Content Forge Desktop v0.8
+# Content Forge Desktop v0.8
 
-A simple platform-first desktop content workstation for Lucedale Logo. The same app can switch into **Anvil Content Forge** module mode.
+A platform-first desktop content workstation with an AI Studio for generating finished copy and images.
 
 ## Current workflow
 
@@ -18,7 +18,6 @@ Start a New → Choose Platform → Choose Generator → Add Brief or Images →
 - Saved projects and recent-project reopening.
 - Editable, copyable, downloadable prompt packages.
 - Brand defaults and standing copy rules.
-- Lucedale Logo mode and Anvil module mode.
 - Local JSON data storage with import and export.
 - Dedicated platform adaptation prompts and export presets.
 
@@ -119,7 +118,7 @@ Use the File menu to save, export, import, or open the data folder.
 
 ## v0.5 additions
 
-- macOS-inspired dark interface with X-style contrast and blue accents
+- Dark interface with high contrast and blue accents
 - Dedicated Carousel Forge, Editorial OS, and Neon Listicle generators for X
 - Dedicated Carousel Forge, Editorial OS, and Neon Listicle generators for Facebook
 - 5:2 article-image output remains available at 2000 × 800 on article-capable platform tabs
