@@ -52,8 +52,33 @@ function createWindow() {
   });
 
   win.once('ready-to-show', () => win.show());
+  attachContextMenu(win);
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
   return win;
+}
+
+// Right-click Cut/Copy/Paste/Select All. Without this, users right-clicking a
+// field (license key, API key) get no paste option and think copy/paste is broken.
+function attachContextMenu(win) {
+  win.webContents.on('context-menu', (_event, params) => {
+    const { editFlags, isEditable, selectionText } = params;
+    const hasSelection = !!(selectionText && selectionText.trim());
+    if (!isEditable && !hasSelection) return;
+    const items = [];
+    if (isEditable) items.push(
+      { role: 'undo', enabled: editFlags.canUndo },
+      { role: 'redo', enabled: editFlags.canRedo },
+      { type: 'separator' },
+      { role: 'cut', enabled: editFlags.canCut }
+    );
+    items.push({ role: 'copy', enabled: editFlags.canCopy || hasSelection });
+    if (isEditable) items.push(
+      { role: 'paste', enabled: editFlags.canPaste },
+      { role: 'pasteAndMatchStyle', enabled: editFlags.canPaste }
+    );
+    items.push({ type: 'separator' }, { role: 'selectAll', enabled: editFlags.canSelectAll });
+    Menu.buildFromTemplate(items).popup({ window: win });
+  });
 }
 
 function createMenu() {
