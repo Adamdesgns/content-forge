@@ -899,6 +899,24 @@
       .hero h1 { font-size: 23px; }
       .brand-mark { width: 38px; }
     }
+
+    /* Publishing scaffold — Connected Accounts + per-network publish results */
+    .conn-list { display: grid; gap: 8px; }
+    .conn-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.03); }
+    .conn-ico { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 8px; background: rgba(255,255,255,.06); font-size: 15px; }
+    .conn-meta { min-width: 0; flex: 1; }
+    .conn-meta strong { display: block; font-size: 13px; }
+    .conn-meta span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conn-state { font-size: 10px; font-weight: 850; letter-spacing: .04em; padding: 1px 7px; border-radius: 99px; margin-left: 6px; vertical-align: middle; background: rgba(255,255,255,.08); color: var(--muted); }
+    .conn-state.connected { background: rgba(52,199,89,.16); color: #34c759; }
+    .conn-state.connecting { background: rgba(29,155,240,.16); color: #1d9bf0; }
+    .conn-state.error, .conn-state.expired { background: rgba(255,107,107,.16); color: #ff6b6b; }
+    .pub-badge.live { background: rgba(52,199,89,.16); color: #34c759; }
+    .pub-result { margin-top: 9px; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+    .pub-result.published { color: #34c759; }
+    .pub-result.failed { color: #ff6b6b; }
+    .pub-result a { color: inherit; }
+    .linkish { border: 0; background: none; padding: 0; color: #1d9bf0; font: inherit; font-size: 11.5px; cursor: pointer; text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -1326,6 +1344,12 @@
               <span class="hint">Auto picks the closest of the three shapes to each platform's ratio.</span>
             </div>
           </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Connected Accounts</h3>
+          <p class="settings-hint">Connect a network to publish straight from Content Forge. <strong>Demo mode:</strong> these are mock connections for testing the flow — no real account is touched and nothing is posted yet. Real one-tap publishing (via your own Buffer) is coming.</p>
+          <div class="conn-list" id="connectedAccounts"></div>
         </div>
 
         <div class="settings-section">
@@ -1926,7 +1950,11 @@
         audience: 'Local business owners and creators',
         rules: 'Use direct language. Keep copy easy to paste. Avoid em dashes. End with a clear action when appropriate.'
       },
-      projects: []
+      projects: [],
+      // Publishing scaffold: normalized SocialConnection records. MOCK ONLY today —
+      // NEVER store real access/refresh tokens here (handoff §8). Real tokens live
+      // with the provider (Buffer) or a future backend, never in this client state.
+      connections: []
     };
 
     let state = structuredClone(DEFAULT_STATE);
@@ -2984,6 +3012,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
       $('#settingsTextModel').value = settings.textModel;
       $('#settingsImageModel').value = settings.imageModel;
       $('#settingsImageSize').value = settings.imageSize;
+      renderConnectedAccounts();
       renderAccount();
     }
 
@@ -3071,6 +3100,142 @@ Return three concepts, rank them, then provide the final image-generation prompt
       snapchat:  { name: 'Snapchat', icon: '⌐', charLimit: 250, tagLimit: 3, composer: 'https://web.snapchat.com/', intent: null }
     };
 
+    /* ==========================================================================
+       PUBLISHING SCAFFOLD (Phase 0/1) — provider-neutral adapter boundary.
+       Today only a MOCK adapter is wired: it simulates connect/publish so the
+       Connected Accounts → Review → per-destination results flow is fully
+       testable at ZERO cost and with ZERO real posting. The real Buffer adapter
+       (bring-your-own token, desktop-first) drops in behind this SAME interface
+       later. The existing composer handoff (publishLaunch) stays as the
+       universal fallback for anything a provider can't publish directly.
+
+       Normalized models (provider shapes must NOT leak across the app — §7):
+         SocialConnection { id, network, destinationName, avatar, state,
+                            capabilities, lastCheck, mock }
+           state: 'connecting' | 'connected' | 'expired' | 'error'
+         PublishResult    { network, state, at, externalUrl, error, retryable }
+           state: 'publishing' | 'published' | 'failed' | 'composer'
+       ========================================================================== */
+    const pubWait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const pubShortId = () => Math.random().toString(36).slice(2, 8); // mock ids only
+    const publishResults = {}; // session-only: { [projectId]: { [network]: PublishResult } }
+
+    // A PublishingAdapter implements: connect(network)->SocialConnection,
+    // disconnect(id), getCapabilities(network), validate(post, connection),
+    // publish(post, connection)->PublishResult. Buffer will implement the same.
+    const MockAdapter = {
+      id: 'mock',
+      getCapabilities(network) {
+        const videoFirst = ['tiktok', 'youtube'].includes(network);
+        return {
+          text: !videoFirst,
+          image: true,
+          carousel: ['instagram', 'facebook', 'x'].includes(network),
+          video: videoFirst,
+          schedule: true,
+          directPublish: !videoFirst // video-first networks fall back to composer in the mock
+        };
+      },
+      async connect(network) {
+        await pubWait(650); // simulate an OAuth round-trip. No token is created or stored.
+        const handle = (state.brand.handle || 'yourbrand').replace(/^@/, '');
+        return {
+          id: 'conn_' + network + '_' + pubShortId(),
+          network,
+          destinationName: '@' + handle + ' · ' + PUBLISH_NETWORKS[network].name + ' (demo)',
+          avatar: PUBLISH_NETWORKS[network].icon,
+          state: 'connected',
+          capabilities: this.getCapabilities(network),
+          lastCheck: Date.now(),
+          mock: true
+        };
+      },
+      async disconnect() { await pubWait(150); },
+      validate(post, connection) {
+        const adapted = adaptForNetwork(connection.network, post.text || '');
+        const warnings = [];
+        const blockers = [];
+        if (!connection.capabilities.directPublish) blockers.push('Needs its own composer for this post type.');
+        if (adapted.status === 'over') warnings.push('Text is over the limit — it will be trimmed.');
+        if (adapted.tagsDropped > 0) warnings.push(adapted.tagsDropped + ' hashtag(s) trimmed for this network.');
+        return { ok: blockers.length === 0, warnings, blockers, requiresComposer: blockers.length > 0, adapted };
+      },
+      async publish(post, connection) {
+        await pubWait(900); // simulate the network call
+        return {
+          network: connection.network,
+          state: 'published',
+          at: Date.now(),
+          externalUrl: PUBLISH_NETWORKS[connection.network].composer,
+          error: null,
+          retryable: false
+        };
+      }
+    };
+
+    // The registry: every network resolves to the mock today; the real Buffer
+    // adapter will be selected here once BYO-token connect is built.
+    function adapterFor(/* network */) { return MockAdapter; }
+
+    function connectionFor(network) { return (state.connections || []).find((c) => c.network === network && c.state === 'connected'); }
+
+    async function connectNetwork(network) {
+      if (connectionFor(network)) return;
+      const placeholder = { id: 'pending_' + network, network, state: 'connecting', mock: true };
+      state.connections = (state.connections || []).filter((c) => c.network !== network);
+      state.connections.push(placeholder);
+      renderConnectedAccounts();
+      try {
+        const conn = await adapterFor(network).connect(network);
+        state.connections = state.connections.filter((c) => c !== placeholder);
+        state.connections.push(conn);
+        await saveState();
+      } catch (error) {
+        placeholder.state = 'error';
+      }
+      renderConnectedAccounts();
+      renderPublishStudio();
+    }
+
+    async function disconnectNetwork(network) {
+      const conn = (state.connections || []).find((c) => c.network === network);
+      if (!conn) return;
+      if (!confirm('Disconnect ' + PUBLISH_NETWORKS[network].name + '? (Demo connection — no real account is affected.)')) return;
+      try { await adapterFor(network).disconnect(conn.id); } catch (e) { /* best-effort */ }
+      state.connections = (state.connections || []).filter((c) => c.network !== network);
+      await saveState();
+      renderConnectedAccounts();
+      renderPublishStudio();
+    }
+
+    function renderConnectedAccounts() {
+      const host = document.getElementById('connectedAccounts');
+      if (!host) return;
+      host.innerHTML = Object.keys(PUBLISH_NETWORKS).map((network) => {
+        const net = PUBLISH_NETWORKS[network];
+        const conn = (state.connections || []).find((c) => c.network === network);
+        const st = conn ? conn.state : 'not_connected';
+        const label = { not_connected: 'Not connected', connecting: 'Connecting…', connected: 'Connected', expired: 'Expired', error: 'Error' }[st] || st;
+        const sub = st === 'connected' ? escapeHtml(conn.destinationName)
+          : st === 'error' ? 'Could not connect — try again.'
+          : 'Not connected';
+        const action = st === 'connected'
+          ? `<button type="button" class="btn ghost small" data-disconnect="${network}">Disconnect</button>`
+          : st === 'connecting'
+          ? `<button type="button" class="btn small" disabled>Connecting…</button>`
+          : `<button type="button" class="btn small" data-connect="${network}">Connect</button>`;
+        return `
+          <div class="conn-row">
+            <div class="conn-ico">${net.icon}</div>
+            <div class="conn-meta">
+              <strong>${net.name} <span class="conn-state ${st}">${label}</span></strong>
+              <span>${sub}</span>
+            </div>
+            ${action}
+          </div>`;
+      }).join('');
+    }
+
     function splitTrailingTags(text) {
       const lines = String(text || '').trimEnd().split('\n');
       const tags = [];
@@ -3129,22 +3294,69 @@ Return three concepts, rank them, then provide the final image-generation prompt
 
     function renderPublishStudio() {
       const source = $('#pubText').value.trim();
+      const results = activeProject ? (publishResults[activeProject.id] || {}) : {};
       $('#pubGrid').innerHTML = Object.keys(PUBLISH_NETWORKS).map((key) => {
         const net = PUBLISH_NETWORKS[key];
         const adapted = source ? adaptForNetwork(key, source) : null;
+        const conn = connectionFor(key);
+        const canDirect = conn && conn.capabilities && conn.capabilities.directPublish;
         const count = adapted
           ? `<span class="pub-count ${adapted.status}">${adapted.count} / ${net.charLimit}${adapted.tagsDropped > 0 ? ` <small>· ${adapted.tagsDropped} tag${adapted.tagsDropped > 1 ? 's' : ''} trimmed</small>` : ''}</span>`
           : '<span class="pub-count"><small>Add post text above</small></span>';
+        // Badge shows how this network will publish: direct (connected) vs composer.
+        const badge = conn
+          ? `<span class="pub-badge live">direct publish${conn.mock ? ' · demo' : ''}</span>`
+          : `<span class="pub-badge ${net.intent ? 'pre' : ''}">opens composer</span>`;
+        const res = results[key];
+        const resultLine = res
+          ? `<div class="pub-result ${res.state}">${
+              res.state === 'publishing' ? '<span class="spinner"></span>Publishing…'
+              : res.state === 'published' ? `✓ Published${conn && conn.mock ? ' (demo)' : ''}${res.externalUrl ? ` · <a href="${res.externalUrl}" target="_blank" rel="noopener">view</a>` : ''}`
+              : res.state === 'failed' ? `✕ ${escapeHtml(res.error || 'Failed')}${res.retryable ? ' · <button class="linkish" data-pub-retry="' + key + '">Retry</button>' : ''}`
+              : ''
+            }</div>`
+          : '';
+        const primary = canDirect
+          ? `<button class="btn primary small" data-pub-publish="${key}" ${source ? '' : 'disabled'}>Publish</button>`
+          : `<button class="btn primary small" data-pub-open="${key}">Open</button>`;
         return `
           <div class="pub-card">
-            <div class="pub-card-top"><strong>${net.icon} ${net.name}</strong><span class="pub-badge ${net.intent ? 'pre' : ''}">${net.intent ? 'auto-prefill' : 'copy & paste'}</span></div>
+            <div class="pub-card-top"><strong>${net.icon} ${net.name}</strong>${badge}</div>
             ${count}
             <div class="pub-actions">
               <button class="btn small" data-pub-copy="${key}" ${source ? '' : 'disabled'}>Copy</button>
-              <button class="btn primary small" data-pub-open="${key}">Open</button>
+              ${primary}
+              ${canDirect ? `<button class="btn ghost small" data-pub-open="${key}" title="Open the composer instead">Composer</button>` : ''}
             </div>
+            ${resultLine}
           </div>`;
       }).join('');
+    }
+
+    async function mockPublishTo(key) {
+      if (!activeProject) { showToast('Open a campaign first.'); return; }
+      const source = $('#pubText').value.trim();
+      if (!source) { showToast('Add post text above first.'); return; }
+      const conn = connectionFor(key);
+      if (!conn) return;
+      const post = { text: source, image: null };
+      const check = adapterFor(key).validate(post, conn);
+      if (!check.ok) {
+        showToast(PUBLISH_NETWORKS[key].name + ': ' + (check.blockers[0] || 'Falling back to composer.'));
+        publishLaunch(key); // composer fallback for anything not directly publishable
+        return;
+      }
+      publishResults[activeProject.id] = publishResults[activeProject.id] || {};
+      publishResults[activeProject.id][key] = { network: key, state: 'publishing', at: Date.now() };
+      renderPublishStudio();
+      try {
+        const result = await adapterFor(key).publish(post, conn);
+        publishResults[activeProject.id][key] = result;
+        showToast(PUBLISH_NETWORKS[key].name + (conn.mock ? ' published (demo).' : ' published.'));
+      } catch (error) {
+        publishResults[activeProject.id][key] = { network: key, state: 'failed', at: Date.now(), error: 'Publish failed — try again.', retryable: true };
+      }
+      renderPublishStudio();
     }
 
     $('#pubText').addEventListener('input', () => {
@@ -3160,7 +3372,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
       showToast('Pulled your generated text into Launch.');
     });
     $('#publishStudio').addEventListener('click', async (event) => {
-      const button = event.target.closest('button[data-pub-copy], button[data-pub-open]');
+      const button = event.target.closest('button[data-pub-copy], button[data-pub-open], button[data-pub-publish], button[data-pub-retry]');
       if (!button) return;
       if (button.dataset.pubCopy) {
         const adapted = adaptForNetwork(button.dataset.pubCopy, $('#pubText').value.trim());
@@ -3168,6 +3380,10 @@ Return three concepts, rank them, then provide the final image-generation prompt
         showToast(PUBLISH_NETWORKS[button.dataset.pubCopy].name + ' version copied.');
       } else if (button.dataset.pubOpen) {
         publishLaunch(button.dataset.pubOpen);
+      } else if (button.dataset.pubPublish) {
+        mockPublishTo(button.dataset.pubPublish);
+      } else if (button.dataset.pubRetry) {
+        mockPublishTo(button.dataset.pubRetry);
       }
     });
 
@@ -3193,6 +3409,12 @@ Return three concepts, rank them, then provide the final image-generation prompt
         ? 'Log out and deactivate this device? You can activate again with your license key.'
         : 'Log out of this device?';
       if (confirm(msg)) logOut();
+    });
+    $('#connectedAccounts').addEventListener('click', (event) => {
+      const c = event.target.closest('[data-connect]');
+      const d = event.target.closest('[data-disconnect]');
+      if (c) connectNetwork(c.dataset.connect);
+      else if (d) disconnectNetwork(d.dataset.disconnect);
     });
     $$('[data-close-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.closeModal}`).classList.add('hidden')));
     $$('[data-open-prompt]').forEach((button) => button.addEventListener('click', () => openLibraryPrompt(button.dataset.openPrompt)));
