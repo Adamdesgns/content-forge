@@ -1,0 +1,3169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Content Forge</title>
+  <!-- PWA / mobile (inert under Electron file://, active when served over http/https) -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#08090b" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Content Forge" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <style>
+    :root {
+      --bg: #08090b;
+      --surface: #111318;
+      --surface-2: #171a20;
+      --surface-3: #20242c;
+      --line: rgba(255,255,255,.11);
+      --line-strong: rgba(255,255,255,.19);
+      --text: #f4f1e9;
+      --muted: #a7a59f;
+      --gold: #d1aa62;
+      --gold-2: #f3d58b;
+      --blue: #78b8d8;
+      --orange: #ff8a1e;
+      --green: #66d18f;
+      --red: #ec7777;
+      --radius: 18px;
+      --shadow: 0 22px 70px rgba(0,0,0,.38);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(209,170,98,.13), transparent 28%),
+        radial-gradient(circle at 95% 5%, rgba(120,184,216,.10), transparent 25%),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+    .hidden { display: none !important; }
+
+    .app-shell { min-height: 100vh; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-height: 78px;
+      padding: 14px 24px;
+      background: rgba(8,9,11,.86);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 260px;
+    }
+
+    .brand-mark {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      color: #0b0a08;
+      background: linear-gradient(145deg, var(--gold-2), var(--gold));
+      box-shadow: 0 10px 30px rgba(209,170,98,.18);
+      font-weight: 1000;
+      letter-spacing: -.05em;
+    }
+
+    .brand-name { font-weight: 950; letter-spacing: -.025em; line-height: 1; }
+    .brand-sub { margin-top: 5px; font-size: 12px; color: var(--muted); }
+
+    .mode-toggle {
+      display: flex;
+      gap: 4px;
+      margin-left: auto;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.035);
+    }
+
+    .mode-toggle button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 11px;
+      font-size: 12px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .mode-toggle button.active {
+      color: var(--gold-2);
+      background: rgba(209,170,98,.14);
+    }
+
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,.055);
+      font-weight: 850;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); border-color: var(--line-strong); background: rgba(255,255,255,.085); }
+    .btn.primary { color: #15110a; background: linear-gradient(145deg, var(--gold-2), var(--gold)); border-color: transparent; }
+    .btn.ghost { background: transparent; }
+    .btn.danger { color: #ffd5d5; border-color: rgba(236,119,119,.28); }
+    .btn.small { padding: 8px 10px; font-size: 12px; border-radius: 10px; }
+    .btn.icon { width: 42px; height: 42px; padding: 0; display: grid; place-items: center; }
+
+    .page { padding: 22px 24px 40px; max-width: 1540px; margin: 0 auto; }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      color: var(--gold-2);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 8px 0 8px; font-size: clamp(32px, 4vw, 52px); line-height: .98; letter-spacing: -.05em; }
+    .hero p { margin: 0; color: var(--muted); max-width: 700px; line-height: 1.55; }
+
+    .platform-tabs {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: rgba(255,255,255,.035);
+      margin-bottom: 20px;
+    }
+
+    .platform-tab {
+      border: 1px solid transparent;
+      border-radius: 13px;
+      padding: 12px 10px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 900;
+      transition: .18s ease;
+      white-space: nowrap;
+    }
+
+    .platform-tab:hover { color: var(--text); background: rgba(255,255,255,.045); }
+    .platform-tab.active {
+      color: var(--text);
+      border-color: rgba(209,170,98,.32);
+      background: linear-gradient(145deg, rgba(209,170,98,.16), rgba(255,255,255,.06));
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(155deg, rgba(255,255,255,.064), rgba(255,255,255,.025));
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 18px 0;
+    }
+
+    .section-head h2 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+    .section-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+
+    .generator-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding: 18px;
+    }
+
+    .generator-card {
+      min-height: 180px;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(8,9,11,.48);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: .2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .generator-card::after {
+      content: "";
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      right: -55px;
+      top: -55px;
+      background: radial-gradient(circle, rgba(209,170,98,.13), transparent 70%);
+    }
+
+    .generator-card:hover { transform: translateY(-3px); border-color: rgba(209,170,98,.34); background: rgba(209,170,98,.07); }
+    .generator-icon { font-size: 24px; margin-bottom: 13px; }
+    .generator-card h3 { margin: 0 0 7px; font-size: 16px; letter-spacing: -.02em; }
+    .generator-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .generator-meta { margin-top: auto; padding-top: 14px; display: flex; justify-content: space-between; color: var(--gold-2); font-size: 11px; font-weight: 850; }
+
+    .recent-panel { position: sticky; top: 98px; }
+    .recent-list { padding: 12px; display: grid; gap: 8px; }
+
+    .recent-empty {
+      padding: 30px 16px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .project-row {
+      display: grid;
+      grid-template-columns: 42px minmax(0,1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid transparent;
+      border-radius: 13px;
+      cursor: pointer;
+    }
+
+    .project-row:hover { border-color: var(--line); background: rgba(255,255,255,.045); }
+    .project-badge { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: rgba(209,170,98,.12); color: var(--gold-2); font-weight: 950; }
+    .project-title { font-weight: 850; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .project-sub { margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .project-time { color: var(--muted); font-size: 10px; }
+
+    .quick-card {
+      margin: 12px;
+      padding: 15px;
+      border-radius: 15px;
+      border: 1px solid rgba(120,184,216,.2);
+      background: rgba(120,184,216,.07);
+    }
+    .quick-card strong { display: block; margin-bottom: 6px; }
+    .quick-card p { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(0,0,0,.72);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal {
+      width: min(920px, 96vw);
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--line-strong);
+      border-radius: 22px;
+      background: #101217;
+      box-shadow: 0 28px 90px rgba(0,0,0,.62);
+      overflow: hidden;
+    }
+
+    .modal.small-modal { width: min(690px, 96vw); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+    .modal-header h2 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+    .modal-header p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .modal-body { padding: 20px; overflow: auto; }
+    .modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 20px; border-top: 1px solid var(--line); }
+
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+    .step-indicator { padding: 10px 12px; border-radius: 12px; color: var(--muted); background: rgba(255,255,255,.035); font-size: 12px; font-weight: 850; }
+    .step-indicator.active { color: var(--gold-2); background: rgba(209,170,98,.12); box-shadow: inset 0 0 0 1px rgba(209,170,98,.22); }
+    .step-indicator.done { color: var(--green); }
+
+    .choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+    .choice-card {
+      padding: 14px;
+      min-height: 112px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,.035);
+      cursor: pointer;
+    }
+    .choice-card:hover { border-color: var(--line-strong); }
+    .choice-card.selected { border-color: rgba(209,170,98,.52); background: rgba(209,170,98,.11); }
+    .choice-card strong { display: block; margin-bottom: 6px; font-size: 14px; }
+    .choice-card span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+    .prompt-system-grid { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .prompt-system-grid .hint { display: block; min-height: 32px; margin-top: 2px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field { display: grid; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { color: #d7d2c8; font-size: 12px; font-weight: 850; }
+    .field .hint { color: var(--muted); font-size: 11px; font-weight: 500; }
+    input, textarea, select {
+      width: 100%;
+      color: var(--text);
+      background: #090b0f;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 12px;
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: rgba(209,170,98,.52); box-shadow: 0 0 0 3px rgba(209,170,98,.08); }
+    textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
+    option { background: #111318; }
+
+    .upload-zone {
+      border: 1px dashed rgba(209,170,98,.38);
+      border-radius: 15px;
+      padding: 19px;
+      text-align: center;
+      background: rgba(209,170,98,.045);
+      cursor: pointer;
+    }
+    .upload-zone:hover { background: rgba(209,170,98,.075); }
+    .upload-zone strong { display: block; }
+    .upload-zone span { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; }
+    .asset-previews { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+    .asset-thumb { position: relative; width: 84px; height: 74px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #08090b; }
+    .asset-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .asset-thumb button { position: absolute; right: 4px; top: 4px; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.72); cursor: pointer; }
+
+    .platform-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+    .check-chip { position: relative; }
+    .check-chip input { position: absolute; opacity: 0; pointer-events: none; }
+    .check-chip label { display: block; padding: 9px 11px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 850; }
+    .check-chip input:checked + label { color: var(--gold-2); border-color: rgba(209,170,98,.38); background: rgba(209,170,98,.12); }
+
+    .workspace {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      overflow-y: auto;
+      background: var(--bg);
+    }
+
+    .workspace-top {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(12,14,18,.96);
+      backdrop-filter: blur(10px);
+    }
+    .workspace-title { min-width: 0; }
+    .workspace-title strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .workspace-title span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .workspace-actions { margin-left: auto; display: flex; gap: 8px; }
+
+    .workspace-grid {
+      min-height: 0;
+      height: calc(100vh - 96px);
+      display: grid;
+      grid-template-columns: 280px minmax(0,1fr) 330px;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .workspace-card { min-height: 0; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); overflow: hidden; }
+    .workspace-card-header { padding: 14px 15px; border-bottom: 1px solid var(--line); }
+    .workspace-card-header strong { display: block; }
+    .workspace-card-header span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .workspace-scroll { height: calc(100% - 65px); overflow: auto; padding: 14px; }
+
+    .detail-list { display: grid; gap: 12px; }
+    .detail-item label { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 4px; }
+    .detail-item div { font-size: 13px; line-height: 1.4; }
+    .mini-assets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .mini-assets img { width: 100%; aspect-ratio: 1.15; object-fit: cover; border-radius: 9px; border: 1px solid var(--line); }
+
+    .editor-wrap { height: 100%; display: grid; grid-template-rows: auto minmax(0,1fr); }
+    .editor-tabs { display: flex; gap: 7px; padding: 10px; border-bottom: 1px solid var(--line); }
+    .editor-tab { border: 0; border-radius: 9px; padding: 8px 10px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 850; cursor: pointer; }
+    .editor-tab.active { color: var(--gold-2); background: rgba(209,170,98,.12); }
+    .prompt-editor { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; padding: 18px; background: #090b0f; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12px; line-height: 1.55; resize: none; }
+
+    .adapt-list { display: grid; gap: 9px; }
+    .adapt-card { padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.03); }
+    .adapt-top { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+    .adapt-card strong { font-size: 13px; }
+    .adapt-card small { display: block; color: var(--gold-2); margin-top: 4px; }
+    .adapt-card p { margin: 9px 0 10px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+
+    .prompt-library-list { display: grid; gap: 10px; }
+    .library-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.03); }
+    .library-row p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+
+    .toast {
+      position: fixed;
+      z-index: 120;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 12px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 11px 15px;
+      border: 1px solid var(--line-strong);
+      border-radius: 12px;
+      background: #1a1d23;
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 800;
+      transition: .22s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 1200px) {
+      .generator-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .workspace-grid { grid-template-columns: 230px minmax(0,1fr) 285px; }
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-wrap: wrap; }
+      .brand { min-width: 0; }
+      .mode-toggle { margin-left: 0; }
+      .content-grid { grid-template-columns: 1fr; }
+      .recent-panel { position: static; }
+      .platform-tabs { overflow-x: auto; grid-template-columns: repeat(6, minmax(130px, 1fr)); }
+      .workspace-grid { grid-template-columns: 1fr; overflow: visible; height: auto; }
+      .workspace-card { min-height: 380px; }
+      .workspace { position: fixed; overflow: auto; }
+    }
+
+    @media (max-width: 700px) {
+      .page { padding: 16px; }
+      .topbar { padding: 12px 16px; }
+      .top-actions .btn:not(.primary) { display: none; }
+      .hero { align-items: start; flex-direction: column; }
+      .generator-grid, .choice-grid, .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .workspace-actions .btn span { display: none; }
+    }
+
+
+    /* Dark workspace visual system */
+    :root {
+      --bg: #000000;
+      --surface: rgba(18,18,18,.86);
+      --surface-2: rgba(30,30,30,.78);
+      --surface-3: #242424;
+      --line: rgba(255,255,255,.105);
+      --line-strong: rgba(255,255,255,.20);
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --gold: #1d9bf0;
+      --gold-2: #65b8ff;
+      --blue: #1d9bf0;
+      --orange: #ff9f0a;
+      --green: #30d158;
+      --red: #ff453a;
+      --radius: 20px;
+      --shadow: 0 24px 80px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.035);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 82% -8%, rgba(29,155,240,.13), transparent 30%),
+        radial-gradient(circle at 12% 0%, rgba(255,255,255,.055), transparent 24%),
+        #000;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: -.005em;
+    }
+
+    .app-shell { min-height: 100vh; }
+
+    .topbar {
+      min-height: 64px;
+      padding: 10px 18px;
+      gap: 14px;
+      background: rgba(0,0,0,.72);
+      border-bottom: 1px solid rgba(255,255,255,.09);
+      backdrop-filter: saturate(160%) blur(28px);
+      -webkit-backdrop-filter: saturate(160%) blur(28px);
+      -webkit-app-region: drag;
+    }
+
+    .topbar button, .topbar .mode-toggle, .topbar .brand { -webkit-app-region: no-drag; }
+
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 4px 0 2px;
+      min-width: 58px;
+    }
+
+    .window-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.14);
+    }
+    .window-dot.close { background: #ff5f57; }
+    .window-dot.minimize { background: #febc2e; }
+    .window-dot.maximize { background: #28c840; }
+
+    .brand { min-width: 235px; gap: 10px; }
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      color: white;
+      background: linear-gradient(145deg, #232323, #080808);
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.11), 0 8px 22px rgba(0,0,0,.35);
+      font-size: 11px;
+      letter-spacing: -.02em;
+    }
+    .brand-name { font-weight: 700; letter-spacing: -.02em; }
+    .brand-sub { margin-top: 3px; font-size: 11px; }
+
+    .mode-toggle {
+      margin-left: auto;
+      padding: 3px;
+      background: rgba(118,118,128,.18);
+      border-color: rgba(255,255,255,.08);
+      box-shadow: inset 0 1px 1px rgba(0,0,0,.45);
+    }
+    .mode-toggle button { padding: 7px 12px; font-weight: 650; }
+    .mode-toggle button.active {
+      color: white;
+      background: rgba(90,90,95,.72);
+      box-shadow: 0 1px 4px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.10);
+    }
+
+    .btn {
+      border-radius: 11px;
+      padding: 9px 13px;
+      background: rgba(118,118,128,.17);
+      border-color: rgba(255,255,255,.09);
+      font-weight: 650;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    }
+    .btn:hover { border-color: rgba(255,255,255,.18); background: rgba(118,118,128,.26); }
+    .btn.primary {
+      color: white;
+      background: #1d9bf0;
+      border-color: #1d9bf0;
+      box-shadow: 0 8px 24px rgba(29,155,240,.22), inset 0 1px 0 rgba(255,255,255,.19);
+    }
+    .btn.primary:hover { background: #35a7f3; }
+    .btn.icon { border-radius: 11px; }
+
+    .page { max-width: 1600px; padding: 26px 26px 48px; }
+    .hero { margin: 4px 0 18px; align-items: center; }
+    .eyebrow { color: #1d9bf0; font-weight: 700; letter-spacing: .08em; }
+    h1 { font-size: clamp(31px, 3.3vw, 48px); font-weight: 760; letter-spacing: -.052em; }
+    .hero p { color: #98989d; }
+
+    .platform-tabs {
+      display: flex;
+      overflow-x: auto;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 14px;
+      background: rgba(118,118,128,.16);
+      border-color: rgba(255,255,255,.07);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.42);
+    }
+    .platform-tab {
+      flex: 1 0 112px;
+      min-width: 112px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-weight: 680;
+    }
+    .platform-tab.active {
+      border-color: rgba(255,255,255,.10);
+      background: rgba(58,58,60,.88);
+      box-shadow: 0 1px 5px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.10);
+    }
+
+    .content-grid { grid-template-columns: minmax(0,1fr) 330px; gap: 16px; }
+    .panel, .workspace-card, .modal {
+      background: linear-gradient(180deg, rgba(26,26,27,.91), rgba(14,14,15,.94));
+      border-color: rgba(255,255,255,.095);
+      box-shadow: var(--shadow);
+    }
+    .section-head { padding: 17px 18px 0; }
+    .section-head h2 { font-size: 20px; font-weight: 720; }
+
+    .generator-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+    .generator-card {
+      min-height: 172px;
+      border-radius: 15px;
+      background: rgba(255,255,255,.025);
+      border-color: rgba(255,255,255,.085);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+    }
+    .generator-card::after { background: radial-gradient(circle, rgba(29,155,240,.13), transparent 70%); }
+    .generator-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(29,155,240,.42);
+      background: rgba(29,155,240,.07);
+    }
+    .generator-icon { color: #1d9bf0; }
+    .generator-card h3 { font-weight: 720; }
+    .generator-meta { color: #65b8ff; }
+
+    .quick-card {
+      background: rgba(29,155,240,.07);
+      border-color: rgba(29,155,240,.18);
+    }
+
+    input, textarea, select {
+      color: #f5f5f7;
+      background: rgba(0,0,0,.38);
+      border-color: rgba(255,255,255,.11);
+      border-radius: 11px;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(29,155,240,.70);
+      box-shadow: 0 0 0 3px rgba(29,155,240,.14);
+    }
+
+    .modal-backdrop { background: rgba(0,0,0,.68); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+    .modal { border-radius: 22px; }
+    .steps { background: rgba(118,118,128,.14); border-radius: 12px; }
+    .step-indicator.active { color: white; background: rgba(58,58,60,.86); }
+    .choice-card.selected { border-color: rgba(29,155,240,.55); background: rgba(29,155,240,.09); }
+    .platform-check input:checked + span { border-color: rgba(29,155,240,.55); background: rgba(29,155,240,.12); color: white; }
+
+    .workspace { background: #000; }
+    .workspace-top {
+      background: rgba(0,0,0,.76);
+      border-bottom-color: rgba(255,255,255,.09);
+      backdrop-filter: saturate(150%) blur(26px);
+    }
+    .editor-tab.active { color: #65b8ff; border-bottom-color: #1d9bf0; }
+    .adapt-card { background: rgba(255,255,255,.025); }
+    .adapt-card.article-cover { border-color: rgba(29,155,240,.26); background: rgba(29,155,240,.055); }
+    .format-note { color: #8e8e93; font-size: 11px; line-height: 1.45; margin-top: 7px; }
+
+    .article-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: #8bc9ff;
+      background: rgba(29,155,240,.10);
+      border: 1px solid rgba(29,155,240,.20);
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 1100px) {
+      .generator-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .content-grid { grid-template-columns: 1fr; }
+      .recent-panel { position: static; }
+    }
+    @media (max-width: 760px) {
+      .window-controls { display: none; }
+      .brand { min-width: 0; }
+      .brand-sub { display: none; }
+      .topbar { padding: 9px 12px; }
+      .mode-toggle { display: none; }
+      .top-actions .btn.ghost { display: none; }
+      .generator-grid { grid-template-columns: 1fr; }
+    }
+
+
+
+    .spec-box {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(29,155,240,.16);
+      background: rgba(29,155,240,.06);
+    }
+    .spec-box strong { display:block; margin-bottom: 8px; font-size: 13px; }
+    .spec-box ul { margin: 0; padding-left: 18px; color: #c7c7cc; font-size: 12px; line-height: 1.5; }
+    .spec-box li + li { margin-top: 4px; }
+
+    /* Pipeline strip (IDEA → GENERATE → ADAPT → LAUNCH) */
+    .pipeline { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 11.5px; font-weight: 850; letter-spacing: .14em; color: var(--muted); flex-wrap: wrap; }
+    .pipeline .pipe-arrow { color: var(--blue); font-weight: 400; letter-spacing: 0; }
+    .made-by { color: var(--muted); font-size: 12px; text-align: center; margin: 26px 0 6px; }
+    .made-by a { color: inherit; text-decoration: none; }
+
+    /* Lock screen (invite-only gate) */
+    .lock-screen { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(1200px 800px at 50% -10%, #12151b 0%, var(--bg) 70%); }
+    .lock-screen.hidden { display: none; }
+    .lock-card { width: min(360px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 32px 26px; text-align: center; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+    .lock-card .brand-mark { margin: 0 auto 6px; }
+    .lock-card h1 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+    .lock-card p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+    .lock-card input { width: 100%; min-height: 44px; }
+    .lock-mode { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+    .lock-mode.hidden, .lock-checking.hidden { display: none; }
+    .lock-checking { color: var(--muted); font-size: 13px; padding: 8px 0; }
+    #trialBtn { text-decoration: none; }
+    .lock-error { color: #ff6b6b; font-size: 12.5px; min-height: 16px; line-height: 1.45; }
+
+    /* AI settings + Studio */
+    .settings-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .settings-section h3 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.02em; }
+    .settings-hint { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .ai-studio { margin: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 18px; }
+    .ai-studio-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+    .ai-studio-head strong { font-size: 16px; letter-spacing: -.02em; }
+    .ai-studio-head span { color: var(--muted); font-size: 12px; }
+    .studio-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+    .studio-note { color: var(--muted); font-size: 12.5px; line-height: 1.5; background: rgba(29,155,240,.06); border: 1px solid rgba(29,155,240,.16); border-radius: 12px; padding: 12px 14px; }
+    .studio-status { min-height: 18px; color: var(--muted); font-size: 12.5px; margin: 6px 0; }
+    .studio-status.error { color: #ff6b6b; }
+    .studio-output { width: 100%; min-height: 180px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #0b0d11; color: var(--text); font-size: 14px; line-height: 1.55; resize: vertical; white-space: pre-wrap; }
+    .studio-output:empty::before { content: "Generated copy will appear here."; color: var(--muted); }
+    .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+    .gen-img { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #0b0d11; display: flex; flex-direction: column; }
+    .gen-img img { width: 100%; height: auto; display: block; }
+    .gen-img .btn { border-radius: 0; border: 0; border-top: 1px solid var(--line); }
+    .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.25); border-top-color: var(--blue); border-radius: 50%; display: inline-block; vertical-align: -2px; margin-right: 7px; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Publish Studio */
+    .pub-text { width: 100%; min-height: 110px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #0b0d11; color: var(--text); font-size: 14px; line-height: 1.55; resize: vertical; font-family: inherit; box-sizing: border-box; }
+    .pub-text:focus { outline: none; border-color: var(--gold); }
+    .pub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 10px; margin-top: 14px; }
+    .pub-card { border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.03); padding: 11px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .pub-card-top { display: flex; align-items: center; gap: 7px; }
+    .pub-card-top strong { font-size: 13px; }
+    .pub-badge { margin-left: auto; font-size: 10px; font-weight: 850; letter-spacing: .03em; padding: 2px 8px; border-radius: 99px; background: rgba(255,255,255,.08); color: var(--muted); white-space: nowrap; }
+    .pub-badge.pre { background: rgba(102,209,143,.14); color: var(--green); }
+    .pub-count { font-size: 11px; font-variant-numeric: tabular-nums; }
+    .pub-count.ok { color: var(--green); }
+    .pub-count.warn { color: var(--orange); }
+    .pub-count.over { color: var(--red); }
+    .pub-count small { color: var(--muted); font-weight: 400; }
+    .pub-actions { display: flex; gap: 7px; margin-top: auto; }
+    .pub-actions .btn { flex: 1; }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+    /* ============================================================
+       Mobile / PWA responsive layer (v0.8 mobile)
+       Placed last so it overrides the desktop rules by source order.
+       ============================================================ */
+    @media (max-width: 760px) {
+      /* Keep secondary top actions reachable instead of hiding them */
+      .top-actions .btn:not(.primary) { display: inline-flex; }
+      /* Never blank the workspace buttons by hiding their labels */
+      .workspace-actions .btn span { display: inline; }
+    }
+
+    @media (max-width: 640px) {
+      html, body { -webkit-text-size-adjust: 100%; }
+
+      /* Comfortable tap targets + no iOS zoom-on-focus */
+      .btn { min-height: 44px; }
+      input, textarea, select { font-size: 16px; min-height: 44px; }
+      textarea { min-height: 120px; }
+
+      /* Top bar: compact, sticky, safe-area aware */
+      .topbar {
+        position: sticky; top: 0; z-index: 40;
+        flex-wrap: wrap; gap: 10px;
+        padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+        background: rgba(10,10,12,.96);
+        backdrop-filter: blur(12px);
+      }
+      .brand-sub { display: none; }
+      .brand-name { font-size: 15px; }
+      .mode-toggle { order: 3; width: 100%; }
+      .mode-toggle button { flex: 1; }
+      .top-actions { order: 2; margin-left: auto; gap: 6px; }
+      .top-actions .btn { padding: 0 12px; }
+      #promptLibraryBtn { font-size: 0; padding: 0 12px; }
+      #promptLibraryBtn::before { content: "📚"; font-size: 16px; }
+
+      /* Page + hero */
+      .page { padding: 14px; }
+      .hero { flex-direction: column; align-items: start; gap: 8px; }
+      .hero h1 { font-size: 26px; }
+      .hero p { font-size: 13px; }
+
+      /* Platform tabs: swipeable snap row */
+      .platform-tabs {
+        display: flex; overflow-x: auto; gap: 8px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+      }
+      .platform-tabs > * { scroll-snap-align: start; flex: 0 0 auto; min-width: 116px; }
+
+      /* Section headers: let the action button drop full-width below the title */
+      .content-grid .section-head { flex-wrap: wrap; }
+      .content-grid .section-head > .btn { width: 100%; margin-top: 6px; }
+
+      /* Single-column body */
+      .content-grid { grid-template-columns: 1fr; gap: 16px; }
+      .generator-grid, .choice-grid, .form-grid, .prompt-system-grid { grid-template-columns: 1fr; }
+      .recent-panel { position: static; }
+      .steps { grid-template-columns: 1fr; gap: 6px; }
+
+      /* Wizard modal → full screen sheet */
+      .modal-backdrop { padding: 0; }
+      .modal, .modal.small-modal {
+        width: 100vw; max-width: 100vw;
+        height: 100vh; max-height: 100vh;
+        border: 0; border-radius: 0;
+      }
+      .modal-header { padding: calc(14px + env(safe-area-inset-top)) 16px 14px; }
+      .modal-header h2 { font-size: 19px; }
+      .modal-body { padding: 16px; -webkit-overflow-scrolling: touch; }
+      .modal-footer {
+        position: sticky; bottom: 0;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+        background: #101217;
+      }
+      .modal-footer .btn { flex: 1; }
+
+      /* Workspace → full screen, stacked */
+      .workspace { position: fixed; inset: 0; overflow: auto; }
+      .workspace-top {
+        flex-wrap: wrap; gap: 10px;
+        padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+        position: sticky; top: 0; z-index: 5;
+        background: rgba(10,10,12,.96); backdrop-filter: blur(12px);
+      }
+      .workspace-title { flex: 1 1 60%; min-width: 0; }
+      .workspace-actions { width: 100%; display: flex; gap: 8px; }
+      .workspace-actions .btn { flex: 1; padding: 0 10px; }
+      .workspace-grid { grid-template-columns: 1fr; gap: 14px; padding: 14px; }
+      .workspace-card { min-height: auto; }
+      .editor-wrap { min-height: 60vh; }
+      .prompt-editor { min-height: 55vh; font-size: 13px; }
+      .workspace-scroll { max-height: 40vh; }
+
+      /* AI Studio on phones */
+      .ai-studio { margin: 0 14px 14px; }
+      .ai-studio-head { flex-direction: column; gap: 2px; }
+      .studio-actions .btn { flex: 1; }
+
+      .toast { left: 14px; right: 14px; transform: none; width: auto; text-align: center; }
+      .toast.show { transform: translateY(0); }
+    }
+
+    @media (max-width: 400px) {
+      .page { padding: 12px; }
+      .hero h1 { font-size: 23px; }
+      .brand-mark { width: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="lock-screen" id="lockScreen">
+    <div class="lock-card">
+      <div class="brand-mark">CF</div>
+      <h1>Content Forge</h1>
+
+      <div class="lock-checking hidden" id="lockChecking"><span class="spinner"></span>Checking your subscription…</div>
+
+      <!-- License mode (used once Lemon Squeezy is configured) -->
+      <form class="lock-mode hidden" id="licenseForm" autocomplete="off">
+        <p>Enter your license key to unlock. New here? Start a free trial.</p>
+        <input id="licenseKey" type="text" placeholder="License key" spellcheck="false" autocomplete="off" />
+        <button class="btn primary" type="submit" id="activateBtn">Activate</button>
+        <a class="btn ghost" id="trialBtn" href="#" target="_blank" rel="noopener">Start 3-day free trial</a>
+        <div class="lock-error" id="licenseMsg"></div>
+      </form>
+
+      <!-- Password mode (fallback until licensing is configured) -->
+      <form class="lock-mode hidden" id="lockForm" autocomplete="off">
+        <p>Invite only. Enter your credentials to continue.</p>
+        <input id="lockUser" type="text" placeholder="Username" autocomplete="username" spellcheck="false" />
+        <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password" />
+        <button class="btn primary" type="submit">Unlock</button>
+        <div class="lock-error" id="lockError"></div>
+      </form>
+
+      <p class="made-by" style="margin:6px 0 0">Create once. Publish everywhere. · Built by @AdamDesgns</p>
+    </div>
+  </div>
+
+  <div class="app-shell" id="appShell">
+    <header class="topbar">
+      <div class="window-controls" aria-hidden="true">
+        <span class="window-dot close"></span>
+        <span class="window-dot minimize"></span>
+        <span class="window-dot maximize"></span>
+      </div>
+      <div class="brand">
+        <div class="brand-mark">CF</div>
+        <div>
+          <div class="brand-name" id="appName">Content Forge</div>
+          <div class="brand-sub" id="appSubtitle">Create once. Publish everywhere.</div>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn ghost" id="promptLibraryBtn">Prompt Library</button>
+        <button class="btn icon" id="settingsBtn" title="Brand settings">⚙</button>
+        <button class="btn primary" id="newProjectBtn">+ New Campaign</button>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="hero">
+        <div>
+          <div class="eyebrow" id="heroEyebrow">Create once. Publish everywhere.</div>
+          <h1 id="heroTitle">What are we launching?</h1>
+          <p id="heroDescription">You never start with a blank page. Pick a platform, add one idea, and turn it into platform-ready posts for every major social network.</p>
+          <div class="pipeline" aria-label="How it works">
+            <span>IDEA</span><span class="pipe-arrow">→</span>
+            <span>GENERATE</span><span class="pipe-arrow">→</span>
+            <span>ADAPT</span><span class="pipe-arrow">→</span>
+            <span>LAUNCH</span>
+          </div>
+        </div>
+        <button class="btn primary hidden" id="continueCampaignBtn"></button>
+      </section>
+
+      <nav class="platform-tabs" id="platformTabs" aria-label="Social platforms"></nav>
+
+      <div class="content-grid">
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <h2 id="generatorHeading">Instagram Generators</h2>
+              <p id="generatorSubheading">Visual posts, carousels, reels, stories, and campaigns.</p>
+            </div>
+            <button class="btn small" id="startPlatformBtn">Start Instagram Content</button>
+          </div>
+          <div class="generator-grid" id="generatorGrid"></div>
+        </section>
+
+        <aside class="panel recent-panel">
+          <div class="section-head">
+            <div>
+              <h2>Recent Campaigns</h2>
+              <p>Open a saved campaign and keep working.</p>
+            </div>
+          </div>
+          <div class="recent-list" id="recentList"></div>
+          <div class="quick-card">
+            <strong>Instagram is the visual master.</strong>
+            <p>Build the master in Instagram, X, or Facebook. Choose the writing system and image system separately, then create the platform-native version and any adaptations.</p>
+            <button class="btn small" id="quickCarouselBtn">Start a Carousel</button>
+          </div>
+          <div class="quick-card" style="margin-top:0">
+            <strong>Facebook format guide</strong>
+            <p>Feed image: 1080 × 1350. Carousel cards: 1080 × 1080. Reel or story: 1080 × 1920. The app now uses those native dimensions in the Facebook generators.</p>
+          </div>
+        </aside>
+      </div>
+
+      <p class="made-by">Built by <a href="https://github.com/Adamdesgns" target="_blank" rel="noopener">@AdamDesgns</a> · Powered by your OpenAI key</p>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="wizardBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Start a Campaign</h2>
+          <p id="wizardSubtitle">Pick a generator, add the idea, then set the goal.</p>
+        </div>
+        <button class="btn icon ghost" id="closeWizardBtn" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="steps">
+          <div class="step-indicator active" data-step-indicator="1">1. Generator</div>
+          <div class="step-indicator" data-step-indicator="2">2. Brief or image</div>
+          <div class="step-indicator" data-step-indicator="3">3. Settings</div>
+        </div>
+
+        <div class="wizard-step" data-step="1">
+          <div class="field full" style="margin-bottom:14px">
+            <label>Platform</label>
+            <select id="wizardPlatform"></select>
+          </div>
+          <div class="choice-grid" id="wizardGeneratorGrid"></div>
+          <div class="form-grid prompt-system-grid">
+            <div class="field">
+              <label>Writing prompt</label>
+              <select id="writingPromptSelect"></select>
+              <span class="hint" id="writingPromptHint"></span>
+            </div>
+            <div class="field">
+              <label>Image prompt</label>
+              <select id="imagePromptSelect"></select>
+              <span class="hint" id="imagePromptHint"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard-step hidden" data-step="2">
+          <div class="form-grid">
+            <div class="field full">
+              <label>Campaign name <span class="hint">Optional. We can name it from the topic.</span></label>
+              <input id="projectNameInput" placeholder="Example: JARVIS giveaway carousel" />
+            </div>
+            <div class="field full">
+              <label>Brief, notes, article, or source material</label>
+              <textarea id="briefInput" placeholder="Tell us what the content is about, what you are promoting, and what the viewer should understand or do."></textarea>
+            </div>
+            <div class="field full">
+              <label>Reference images or screenshots <span class="hint">Add up to six images.</span></label>
+              <div class="upload-zone" id="uploadZone">
+                <strong>Click to add images</strong>
+                <span>Use a visual to copy, a screenshot for proof, or product images for the carousel.</span>
+              </div>
+              <input class="hidden" id="imageInput" type="file" accept="image/*" multiple />
+              <div class="asset-previews" id="assetPreviews"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard-step hidden" data-step="3">
+          <div class="form-grid">
+            <div class="field">
+              <label>Brand</label>
+              <input id="brandInput" value="Your Brand" />
+            </div>
+            <div class="field">
+              <label>Audience</label>
+              <input id="audienceInput" placeholder="Local service business owners" />
+            </div>
+            <div class="field">
+              <label>Goal</label>
+              <select id="goalInput">
+                <option>Educate</option>
+                <option>Gain followers</option>
+                <option>Collect comments</option>
+                <option>Generate leads</option>
+                <option>Sell an offer</option>
+                <option>Drive downloads</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Tone</label>
+              <select id="toneInput">
+                <option>Direct and confident</option>
+                <option>Local and friendly</option>
+                <option>Professional</option>
+                <option>Educational</option>
+                <option>Bold and high-energy</option>
+                <option>Funny and conversational</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label>Offer or call to action</label>
+              <input id="ctaInput" placeholder="Example: Comment LOGO and we will send the package" />
+            </div>
+            <div class="field">
+              <label>Comment keyword</label>
+              <input id="keywordInput" placeholder="LOGO" />
+            </div>
+            <div class="field">
+              <label>Handle</label>
+              <input id="handleInput" placeholder="@yourbrand" />
+            </div>
+            <div class="field full">
+              <label>Prepare adaptations</label>
+              <div class="platform-checks" id="adaptChecks"></div>
+            </div>
+            <div class="field full">
+              <label>Output formats</label>
+              <div class="platform-checks output-checks" id="outputFormatChecks"></div>
+              <div class="format-note" id="outputFormatNote"></div>
+            </div>
+            <div class="field full">
+              <label>Platform format and character rules</label>
+              <div class="spec-box" id="platformSpecBox"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" id="wizardBackBtn">Cancel</button>
+        <button class="btn primary" id="wizardNextBtn">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="workspace hidden" id="workspace">
+    <div class="workspace-top">
+      <button class="btn icon ghost" id="closeWorkspaceBtn" title="Back">←</button>
+      <div class="workspace-title">
+        <strong id="workspaceTitle">Campaign</strong>
+        <span id="workspaceSubtitle">Instagram · Carousel Forge</span>
+      </div>
+      <div class="workspace-actions">
+        <button class="btn small" id="copyPromptBtn"><span>Copy Prompt</span></button>
+        <button class="btn small" id="downloadPromptBtn"><span>Download .txt</span></button>
+        <button class="btn primary small" id="saveProjectBtn"><span>Save Campaign</span></button>
+      </div>
+    </div>
+
+    <div class="workspace-grid">
+      <aside class="workspace-card">
+        <div class="workspace-card-header">
+          <strong>Campaign Brief</strong>
+          <span>The source information behind every version.</span>
+        </div>
+        <div class="workspace-scroll">
+          <div class="detail-list" id="projectDetails"></div>
+        </div>
+      </aside>
+
+      <main class="workspace-card editor-wrap">
+        <div class="editor-tabs">
+          <button class="editor-tab active" data-editor-view="prompt">Master Prompt</button>
+          <button class="editor-tab" data-editor-view="brief">Brief Only</button>
+        </div>
+        <textarea class="prompt-editor" id="promptEditor" spellcheck="false"></textarea>
+      </main>
+
+      <aside class="workspace-card">
+        <div class="workspace-card-header">
+          <strong>Platform Adaptations</strong>
+          <span>Rebuild the master content for each destination.</span>
+        </div>
+        <div class="workspace-scroll">
+          <div class="adapt-list" id="adaptationList"></div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="ai-studio" id="aiStudio">
+      <div class="ai-studio-head">
+        <strong>Generate</strong>
+        <span>Finished copy and images, written and rendered for you.</span>
+      </div>
+      <div id="studioBody">
+        <div class="studio-actions">
+          <button class="btn primary small" id="genTextBtn">Generate Text</button>
+          <button class="btn small" id="genImageBtn">Generate Image</button>
+          <button class="btn ghost small" id="copyGenTextBtn">Copy Text</button>
+        </div>
+        <div class="studio-status" id="studioStatus"></div>
+        <div class="studio-output" id="genTextOutput" contenteditable="true" spellcheck="false"></div>
+        <div class="image-grid" id="genImageGrid"></div>
+      </div>
+    </section>
+
+    <section class="ai-studio" id="publishStudio">
+      <div class="ai-studio-head">
+        <strong>Launch</strong>
+        <span>Adapted to every major platform. One tap to post.</span>
+      </div>
+      <div class="studio-actions">
+        <button class="btn small" id="pubPullBtn">Use generated text</button>
+      </div>
+      <textarea class="pub-text" id="pubText" spellcheck="false" placeholder="Paste or pull the finished post text here. Trailing #hashtag lines are detected and trimmed per network."></textarea>
+      <div class="pub-grid" id="pubGrid"></div>
+    </section>
+  </section>
+
+  <div class="modal-backdrop hidden" id="libraryBackdrop">
+    <div class="modal small-modal">
+      <div class="modal-header">
+        <div>
+          <h2>Prompt Library</h2>
+          <p>The master systems that power the generators.</p>
+        </div>
+        <button class="btn icon ghost" data-close-modal="libraryBackdrop">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="prompt-library-list">
+          <div class="library-row">
+            <div>
+              <strong>CAROUSEL FORGE v1</strong>
+              <p>Reference-locked seven-slide industrial Instagram carousel system.</p>
+            </div>
+            <button class="btn small" data-open-prompt="CAROUSEL-FORGE-v1.md">Open</button>
+          </div>
+          <div class="library-row">
+            <div>
+              <strong>EDITORIAL OS</strong>
+              <p>Eight-slide terracotta editorial system built around screenshots and proof.</p>
+            </div>
+            <button class="btn small" data-open-prompt="editorial-os-instagram-carousel-prompt.md">Open</button>
+          </div>
+          <div class="library-row">
+            <div>
+              <strong>NEON LISTICLE CAROUSEL</strong>
+              <p>Premium dark numbered carousel with one neon accent and cinematic 3D metaphor objects.</p>
+            </div>
+            <button class="btn small" data-open-prompt="NEON-LISTICLE-CAROUSEL-v1.md">Open</button>
+          </div>
+          <div class="library-row">
+            <div>
+              <strong>FACEBOOK PROMPT POST</strong>
+              <p>Promotes free or paid prompts with benefits, use cases, keyword CTA, pinned comment, delivery DM, and selected image system.</p>
+            </div>
+            <button class="btn small" data-open-prompt="FACEBOOK-PROMPT-POST-v1.md">Open</button>
+          </div>
+          <div class="library-row">
+            <div>
+              <strong>TIKTOK REEL FORGE</strong>
+              <p>Reel-first vertical video system for talking head, screen demo, story, product, and carousel adaptations.</p>
+            </div>
+            <button class="btn small" data-open-prompt="TIKTOK-REEL-FORGE-v1.md">Open</button>
+          </div>
+          <div class="library-row">
+            <div>
+              <strong>ARTICLE IMAGE 5:2</strong>
+              <p>Premium 2000 × 800 article-cover system with minimal text and a center-safe editorial composition.</p>
+            </div>
+            <button class="btn small" data-open-prompt="ARTICLE-IMAGE-5x2-v1.md">Open</button>
+          </div>
+        </div>
+        <div class="field full hidden" id="libraryPromptViewer" style="margin-top:14px">
+          <label id="libraryPromptTitle">Prompt</label>
+          <textarea id="libraryPromptText" style="min-height:380px;font-family:monospace;font-size:11px"></textarea>
+          <button class="btn small" id="copyLibraryPromptBtn">Copy Prompt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="settingsBackdrop">
+    <div class="modal small-modal">
+      <div class="modal-header">
+        <div>
+          <h2>Brand Settings</h2>
+          <p>Defaults used when a new campaign starts.</p>
+        </div>
+        <button class="btn icon ghost" data-close-modal="settingsBackdrop">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field full"><label>Brand name</label><input id="settingsBrand" /></div>
+          <div class="field"><label>Handle</label><input id="settingsHandle" /></div>
+          <div class="field"><label>Default audience</label><input id="settingsAudience" /></div>
+          <div class="field full"><label>Standing content rules</label><textarea id="settingsRules" style="min-height:110px"></textarea></div>
+        </div>
+
+        <div class="settings-section">
+          <h3>AI Generation (OpenAI)</h3>
+          <p class="settings-hint">Your key is stored only on this device and is never included in exports. Usage is billed to your OpenAI account. Get a key at platform.openai.com.</p>
+          <div class="form-grid">
+            <div class="field full">
+              <label>OpenAI API key</label>
+              <input id="settingsOpenaiKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="field">
+              <label>Text model</label>
+              <input id="settingsTextModel" list="textModelList" placeholder="gpt-4o-mini" spellcheck="false" />
+              <datalist id="textModelList">
+                <option value="gpt-4o-mini"></option>
+                <option value="gpt-4o"></option>
+                <option value="gpt-4.1"></option>
+                <option value="gpt-4.1-mini"></option>
+              </datalist>
+              <span class="hint">Writes the copy.</span>
+            </div>
+            <div class="field">
+              <label>Image model</label>
+              <select id="settingsImageModel">
+                <option value="gpt-image-1">gpt-image-1</option>
+                <option value="dall-e-3">dall-e-3</option>
+                <option value="dall-e-2">dall-e-2</option>
+              </select>
+              <span class="hint">Renders images.</span>
+            </div>
+            <div class="field">
+              <label>Image size</label>
+              <select id="settingsImageSize">
+                <option value="1024x1024">1024 × 1024 (square)</option>
+                <option value="1024x1536">1024 × 1536 (portrait)</option>
+                <option value="1536x1024">1536 × 1024 (landscape)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Account</h3>
+          <p class="settings-hint" id="accountStatus"></p>
+          <div class="studio-actions">
+            <button type="button" class="btn small hidden" id="manageSubBtn">Manage subscription</button>
+            <button type="button" class="btn ghost small" id="logoutBtn">Log out / deactivate device</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span></span>
+        <button class="btn primary" id="saveSettingsBtn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* Web / PWA bootstrap. Runs only when the Electron preload bridge is
+       absent (i.e. served in a normal browser). In Electron this whole block
+       is skipped because preload.js already defines window.contentForge. */
+    (function webBootstrap() {
+      const onHttp = location.protocol === 'http:' || location.protocol === 'https:';
+      if (!window.contentForge) {
+        window.contentForge = {
+          platform: 'browser',
+          // Load the full bundled prompt over the network; SW caches it for offline use.
+          readPrompt: (filename) => fetch('prompts/' + filename).then((r) => {
+            if (!r.ok) throw new Error('Prompt not found: ' + filename);
+            return r.text();
+          }),
+          // No native menu in the browser — no-op stubs so menu wiring never throws.
+          onMenuNewProject() {}, onMenuSave() {}, onMenuExport() {}, onMenuImport() {}
+        };
+      }
+      if (onHttp && 'serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('service-worker.js').catch((e) => console.warn('SW registration failed', e));
+        });
+      }
+    })();
+
+    /* ---------- Invite-only gate ----------
+       Client-side lock: keeps casual/public visitors out. Credentials are
+       stored only as a SHA-256 hash so the plain password isn't in the code.
+       Username is case-insensitive; password is case-sensitive. */
+    function cfSha256(ascii){function rr(v,a){return (v>>>a)|(v<<(32-a));}var mp=Math.pow;var mw=mp(2,32);var result='';var words=[];var bl=ascii.length*8;var hash=cfSha256.h=cfSha256.h||[];var k=cfSha256.k=cfSha256.k||[];var pc=k.length;var ic={};for(var cand=2;pc<64;cand++){if(!ic[cand]){for(var i=0;i<313;i+=cand){ic[i]=cand;}hash[pc]=(mp(cand,.5)*mw)|0;k[pc++]=(mp(cand,1/3)*mw)|0;}}ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';for(var i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8;}words[words.length]=((bl/mw)|0);words[words.length]=(bl);for(var j=0;j<words.length;){var w=words.slice(j,j+=16);var oh=hash;hash=hash.slice(0,8);for(var i=0;i<64;i++){var w15=w[i-15],w2=w[i-2];var a=hash[0],e=hash[4];var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=i<16?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;}for(var i=0;i<8;i++){hash[i]=(hash[i]+oh[i])|0;}}for(var i=0;i<8;i++){for(var j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16);}}return result;}
+    const CF_AUTH_HASH = '502b1176fe3c0a0efede0d60f6b074b47740248f257e12efc2df3eb85d73debd';
+    /* ===== Lemon Squeezy subscription licensing =====
+       Fill these three values in after creating your Lemon Squeezy product
+       (Subscription, $9.99, 3-day free trial, License Keys ON). Until then the
+       app falls back to the invite password gate so it keeps working. */
+    const LICENSING = {
+      storeId: '434482',                 // AdamDesgns store
+      productId: '__LS_PRODUCT_ID__',    // optional (store-wide match if left as-is)
+      checkoutUrl: 'https://adamdesgns.lemonsqueezy.com/checkout/buy/8eb28901-b804-4056-a7ec-e22af27dd2d0',
+      portalUrl: 'https://app.lemonsqueezy.com/my-orders', // where customers manage/cancel
+      offlineGraceDays: 7,               // keep working offline this long between checks
+      revalidateEveryHours: 12           // re-verify with the server at most this often
+    };
+    // Only the Store ID + checkout link are required to go live; Product ID is
+    // optional (tighter matching if set, store-wide match if left as-is).
+    // License mode runs on the desktop app only for now. The web/artifact builds
+    // stay on the invite gate because a browser calling Lemon Squeezy's license
+    // API can be blocked by CORS (web licensing will come via a small proxy).
+    const CF_IS_DESKTOP = !!(window.contentForge && window.contentForge.platform && window.contentForge.platform !== 'browser');
+    const LICENSING_CONFIGURED = !window.__ARTIFACT__ && CF_IS_DESKTOP && !LICENSING.storeId.startsWith('__');
+
+    function lsGetLicense() { try { return JSON.parse(localStorage.getItem('cfLicense') || 'null'); } catch (e) { return null; } }
+    function lsSetLicense(v) { try { localStorage.setItem('cfLicense', JSON.stringify(v)); } catch (e) { /* ignore */ } }
+    function lsProductMatches(meta) {
+      if (!meta || String(meta.store_id) !== String(LICENSING.storeId)) return false;
+      const pid = LICENSING.productId;
+      if (!pid || pid === 'ANY' || pid.startsWith('__')) return true; // store-wide match
+      return String(meta.product_id) === String(pid);
+    }
+    async function lsCall(path, params) {
+      const res = await fetch('https://api.lemonsqueezy.com/v1/licenses/' + path, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(params).toString()
+      });
+      return res.json();
+    }
+    // Returns 'active' | 'inactive' | 'offline'
+    async function lsActivate(key) {
+      const name = 'Content Forge (' + ((window.contentForge && window.contentForge.platform) || 'web') + ')';
+      let data;
+      try { data = await lsCall('activate', { license_key: key, instance_name: name }); }
+      catch (e) { return { state: 'offline' }; }
+      if (data && data.activated && data.license_key && data.license_key.status === 'active' && lsProductMatches(data.meta)) {
+        lsSetLicense({ key, instanceId: data.instance.id, lastOk: Date.now() });
+        return { state: 'active' };
+      }
+      let msg = 'That license key is not valid for this product.';
+      if (data && data.error) msg = data.error;
+      else if (data && data.license_key && data.license_key.status !== 'active') msg = 'This subscription is not active. Start or renew your subscription to continue.';
+      return { state: 'inactive', msg };
+    }
+    async function lsValidate(lic) {
+      let data;
+      try { data = await lsCall('validate', { license_key: lic.key, instance_id: lic.instanceId }); }
+      catch (e) { return { state: 'offline' }; }
+      if (data && data.valid && data.license_key && data.license_key.status === 'active' && lsProductMatches(data.meta)) {
+        lsSetLicense(Object.assign({}, lic, { lastOk: Date.now() }));
+        return { state: 'active' };
+      }
+      return { state: 'inactive' };
+    }
+    function lsWithinGrace(lic) {
+      return lic && lic.lastOk && (Date.now() - lic.lastOk) < LICENSING.offlineGraceDays * 86400000;
+    }
+
+    (function initLock(){
+      const lock = document.getElementById('lockScreen');
+      if (!lock) return;
+      const unlock = () => lock.classList.add('hidden');
+      const showMode = (id) => {
+        ['lockChecking', 'licenseForm', 'lockForm'].forEach((m) => document.getElementById(m).classList.add('hidden'));
+        if (id) document.getElementById(id).classList.remove('hidden');
+      };
+
+      if (!LICENSING_CONFIGURED) {
+        // Password fallback (invite-only) until Lemon Squeezy is wired up.
+        let unlocked = false;
+        try { unlocked = localStorage.getItem('cfUnlocked') === CF_AUTH_HASH; } catch (e) { /* ignore */ }
+        if (unlocked) { unlock(); return; }
+        showMode('lockForm');
+        document.getElementById('lockForm').addEventListener('submit', (event) => {
+          event.preventDefault();
+          const user = (document.getElementById('lockUser').value || '').trim().toLowerCase();
+          const pass = document.getElementById('lockPass').value || '';
+          if (cfSha256(user + ':' + pass) === CF_AUTH_HASH) {
+            try { localStorage.setItem('cfUnlocked', CF_AUTH_HASH); } catch (e) { /* ignore */ }
+            unlock();
+          } else {
+            document.getElementById('lockError').textContent = 'Incorrect username or password.';
+          }
+        });
+        document.getElementById('lockUser').focus();
+        return;
+      }
+
+      // Licensed mode.
+      document.getElementById('trialBtn').href = LICENSING.checkoutUrl;
+      document.getElementById('licenseForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const key = (document.getElementById('licenseKey').value || '').trim();
+        if (!key) return;
+        const btn = document.getElementById('activateBtn');
+        const msg = document.getElementById('licenseMsg');
+        btn.disabled = true; msg.textContent = 'Activating…';
+        const r = await lsActivate(key);
+        btn.disabled = false;
+        if (r.state === 'active') { unlock(); }
+        else if (r.state === 'offline') { msg.textContent = 'Could not reach the license server. Check your connection and try again.'; }
+        else { msg.textContent = r.msg; }
+      });
+
+      const promptForKey = (message) => {
+        showMode('licenseForm');
+        if (message) document.getElementById('licenseMsg').textContent = message;
+        document.getElementById('licenseKey').focus();
+      };
+
+      const lic = lsGetLicense();
+      if (lic && lic.key && lic.instanceId) {
+        // Skip a server round-trip if we validated very recently.
+        if (lic.lastOk && (Date.now() - lic.lastOk) < LICENSING.revalidateEveryHours * 3600000) { unlock(); return; }
+        showMode('lockChecking');
+        lsValidate(lic).then((r) => {
+          if (r.state === 'active') unlock();
+          else if (r.state === 'offline' && lsWithinGrace(lic)) unlock();
+          else if (r.state === 'offline') promptForKey('Could not verify your subscription. Connect to the internet and reopen the app.');
+          else promptForKey('Your subscription is no longer active. Resubscribe to continue.');
+        });
+      } else {
+        promptForKey();
+      }
+    })();
+
+    const PLATFORM_DATA = {
+      x: {
+        name: 'X', icon: '𝕏', description: 'Posts, articles, threads, three landscape carousel systems, replies, and 5:2 editorial covers.',
+        generators: [
+          ['x-carousel-forge', 'Carousel Forge · X', 'Rebuild the seven-slide Forge system as bold 1600 × 900 landscape cards for X.', '16:9 cards', '▦'],
+          ['x-editorial-os', 'Editorial OS · X', 'Screenshot-led editorial image thread condensed into readable 1600 × 900 cards.', '16:9 cards', '▥'],
+          ['x-neon-listicle', 'Neon Listicle · X', 'Dark numbered X carousel with one neon accent and cinematic metaphor objects.', '16:9 cards', '◈'],
+          ['x-post', 'Standard Post', 'One sharp public-facing post with hook, body, CTA, and optional image idea.', 'Post', '✦'],
+          ['x-long', 'Long-Form Post', 'A detailed premium post with clean structure and a strong ending.', 'Long post', '▤'],
+          ['x-article', 'X Article', 'Magazine-style article package with headlines, dek, full article, companion post, and 5:2 cover.', 'Article + 5:2', '▧'],
+          ['article-image', 'Article Image 5:2', 'Create a premium 2000 × 800 article hero with minimal text and a text-free alternate.', '2000 × 800', '▬'],
+          ['x-thread', 'X Thread', 'A complete numbered thread with a hook, proof, teaching sequence, and final CTA.', 'Thread', '≡'],
+          ['x-quote', 'Quote Post', 'A concise quote-retweet response that adds useful context or a stronger angle.', 'Reply', '↗'],
+          ['x-reply', 'Super Reply Guy', 'Research-minded reply copy designed to earn conversation without sounding forced.', 'Reply', '↩']
+        ]
+      },
+      instagram: {
+        name: 'Instagram', icon: '◎', description: 'Three master carousel systems plus feed posts, reels, stories, campaigns, and 5:2 article covers.',
+        generators: [
+          ['carousel-forge', 'Carousel Forge', 'Seven-slide reference-locked system with industrial paper, condensed type, voxel heroes, and 3D dioramas.', '4:5 · 7 slides', '▦'],
+          ['editorial-os', 'Editorial OS', 'Eight-slide terracotta editorial system built around screenshots, proof, annotations, and a five-step story.', '4:5 · 8 slides', '▥'],
+          ['neon-listicle', 'Neon Listicle', 'Premium dark numbered carousel with one neon accent, reflective surfaces, and cinematic 3D metaphor objects.', '4:5 · 7+', '◈'],
+          ['ig-post', 'Single Image Post', 'Caption, hook, CTA, on-image text, and visual direction for one feed image.', 'Feed', '▣'],
+          ['ig-reel', 'Instagram Reel', 'Hook, spoken script, shot list, on-screen text, caption, and CTA.', 'Video', '▶'],
+          ['ig-story', 'Story Sequence', 'A tappable story sequence with opening hook, value, proof, and response action.', 'Stories', '▯'],
+          ['article-image', 'Article Image 5:2', 'Create a separate premium 2000 × 800 editorial cover for articles, launch pages, or cross-platform campaigns.', '2000 × 800', '▬'],
+          ['ig-giveaway', 'Giveaway Campaign', 'Post copy, entry rules, comment keyword, story support, and follow-up content.', 'Campaign', '★']
+        ]
+      },
+      threads: {
+        name: 'Threads', icon: '@', description: 'Conversational posts, multi-post stories, opinions, questions, Instagram adaptations, and article covers.',
+        generators: [
+          ['threads-post', 'Standard Post', 'Conversational post with a clean hook and a natural discussion prompt.', 'Post', '✦'],
+          ['threads-series', 'Multi-Post Thread', 'A connected sequence that tells a story or teaches a topic without sounding formal.', 'Series', '≡'],
+          ['threads-story', 'Story Post', 'Personal or business story with context, tension, lesson, and conversation starter.', 'Story', '◫'],
+          ['threads-opinion', 'Opinion Post', 'A confident point of view with supporting reasoning and an open-ended close.', 'Opinion', '◆'],
+          ['threads-question', 'Question Post', 'A strong community question designed to collect real answers and useful replies.', 'Engage', '?'],
+          ['ig-to-threads', 'Instagram to Threads', 'Turn an Instagram caption or carousel into conversational Threads copy.', 'Adapt', '↻'],
+          ['article-image', 'Article Image 5:2', 'Create a 2000 × 800 editorial cover to support a long Threads post or campaign.', '2000 × 800', '▬']
+        ]
+      },
+      facebook: {
+        name: 'Facebook', icon: 'f', description: 'Native Facebook feed posts, square carousel cards, reels, story-ready vertical video, campaigns, and optional 5:2 article covers.',
+        generators: [
+          ['fb-carousel-forge', 'Carousel Forge · Facebook', 'Adapt the Forge system into native 1080 × 1080 Facebook carousel cards with matching long copy and a first comment.', '1:1 carousel', '▦'],
+          ['fb-editorial-os', 'Editorial OS · Facebook', 'Proof-led editorial carousel rebuilt as native 1080 × 1080 Facebook cards with readable screenshots and Facebook-native context.', '1:1 carousel', '▥'],
+          ['fb-neon-listicle', 'Neon Listicle · Facebook', 'Premium dark numbered carousel rebuilt as native 1080 × 1080 Facebook cards with longer captions.', '1:1 carousel', '◈'],
+          ['fb-post', 'Feed Post', 'Longer Facebook copy with a local, useful, and easy-to-read structure plus a 1080 × 1350 feed visual brief.', '1080 × 1350 feed', '✦'],
+          ['fb-prompt-post', 'Prompt Post', 'Promote a free or paid AI prompt with benefits, use cases, comment-keyword CTA, pinned comment, delivery DM, and the selected image system.', 'Prompt campaign', '⌘'],
+          ['fb-ad', 'Local Business Ad', 'Offer-led ad copy with audience, pain, proof, CTA, and matching creative brief.', 'Ad', '◎'],
+          ['fb-comment-stack', 'Comment Stack', 'Main post plus a planned sequence of author comments that add value and drive action.', 'Funnel', '☷'],
+          ['fb-giveaway', 'Giveaway Post', 'Giveaway copy, entry rules, keyword CTA, follow-up comments, and image brief.', 'Campaign', '★'],
+          ['fb-story', 'Story / Vertical Update', 'Vertical 1080 × 1920 Facebook story or short update with a fast hook, proof, and tap-through CTA.', '1080 × 1920 story', '◫'],
+          ['fb-reel', 'Facebook Reel', 'Short-form 1080 × 1920 video hook, script, shots, overlay text, caption, and final CTA.', '1080 × 1920 reel', '▶'],
+          ['article-image', 'Article Image 5:2', 'Create a premium 2000 × 800 cover for Facebook articles, links, launches, and campaign headers.', '2000 × 800', '▬']
+        ]
+      },
+      tiktok: {
+        name: 'TikTok', icon: '♪', description: 'A reel-first workspace for native 9:16 video, cover frames, hooks, scripts, screen recordings, demos, stories, and carousel-to-video adaptations.',
+        generators: [
+          ['tiktok-reel-forge', 'TikTok Reel Forge', 'Master reel builder that selects the strongest format and returns the full timed production package.', 'Reel', '▶'],
+          ['tt-talking', 'Talking Head Reel', 'Natural spoken script with pauses, emphasis, B-roll notes, captions, and a strong close.', 'Reel', '●'],
+          ['tt-screen', 'Screen Demo Reel', 'Screen-by-screen demo with voiceover, cursor actions, zoom cues, overlays, and CTA.', 'Reel', '▣'],
+          ['tt-product', 'Product Demo Reel', 'Show the problem, reveal the product, demonstrate the result, and close with action.', 'Reel', '◆'],
+          ['tt-storytime', 'Storytime Reel', 'High-retention story structure with opening tension, escalation, payoff, lesson, and pinned comment.', 'Reel', '◫'],
+          ['tt-carousel-reel', 'Carousel to Reel', 'Turn an Instagram carousel into a paced 9:16 video with voiceover, motion, cuts, and native TikTok copy.', 'Adapt', '↻']
+        ]
+      },
+      youtube: {
+        name: 'YouTube', icon: '▶', description: 'Shorts, long-form videos, outlines, scripts, titles, thumbnails, descriptions, chapters, and article covers.',
+        generators: [
+          ['yt-short', 'YouTube Short', 'Vertical Short with title, hook, script, shot list, overlays, description, and CTA.', 'Short', '▶'],
+          ['yt-video', 'Long-Form Video', 'Full video package with title options, cold open, outline, complete script, B-roll, and ending.', 'Video', '▤'],
+          ['yt-outline', 'Video Outline', 'A clean section-by-section structure before the full script is written.', 'Outline', '≡'],
+          ['yt-title', 'Title Generator', 'Multiple titles ranked for clarity, curiosity, credibility, and click potential.', 'Titles', 'T'],
+          ['yt-thumbnail', 'Thumbnail Builder', 'Minimal thumbnail text, visual concept, composition, and alternate directions for a native 1280 × 720 YouTube thumbnail.', '1280 × 720 thumbnail', '▣'],
+          ['yt-package', 'Description and Chapters', 'Finished description, chapters, links section, pinned comment, and community post.', 'Publish', '☷'],
+          ['article-image', 'Article Image 5:2', 'Create a premium 2000 × 800 article or campaign cover separate from the standard thumbnail.', '2000 × 800', '▬']
+        ]
+      }
+    };
+
+    const WRITING_PROMPT_DATA = [
+      {
+        id: 'platform-native',
+        name: 'Platform Native Writer',
+        platforms: ['all'],
+        description: 'Uses the destination platform’s natural voice, length, structure, CTA, and publishing behavior.',
+        instructions: 'Write natively for the selected platform. Match its natural pacing, copy length, opening style, CTA behavior, and audience expectations.'
+      },
+      {
+        id: 'prompt-post',
+        name: 'Prompt Post Writer',
+        platforms: ['all'],
+        description: 'Promotes a reusable AI prompt or prompt pack without sounding like generic AI marketing.',
+        instructions: 'Frame the prompt as a useful tool. Explain the problem it solves, who it is for, what it produces, and why it is different. Include three hook options, final platform-native copy, use-case bullets when appropriate, a clear comment-keyword or link CTA, a pinned or first comment, and a short delivery DM. Never invent scarcity, results, or testimonials.'
+      },
+      {
+        id: 'educational-explainer',
+        name: 'Educational Explainer',
+        platforms: ['all'],
+        description: 'Teaches one clear idea with proof, examples, and a useful takeaway.',
+        instructions: 'Teach one focused idea. Start with the consequence or useful question, explain the concept simply, use grounded examples, and end with a practical takeaway or discussion prompt.'
+      },
+      {
+        id: 'giveaway-lead',
+        name: 'Giveaway / Lead Magnet Writer',
+        platforms: ['all'],
+        description: 'Builds comment-keyword giveaways, free downloads, lead magnets, and follow-up copy.',
+        instructions: 'Build a clear giveaway or lead-magnet campaign. Include the main post, entry or delivery steps, keyword CTA, pinned or first comment, follow-up reminder, and delivery DM. Make the value concrete and the action easy.'
+      },
+      {
+        id: 'carousel-copy',
+        name: 'Carousel Copy Writer',
+        platforms: ['x', 'instagram', 'threads', 'facebook'],
+        description: 'Creates one strong point per card with clean pacing and a final action.',
+        instructions: 'Plan the copy card by card. Use a hard hook, one focused idea per card, short mobile-readable language, a clear progression, and a final CTA. Keep the caption complementary rather than repeating every card.'
+      },
+      {
+        id: 'marquee-longform',
+        name: 'MARQUEE Long-Form Writer',
+        platforms: ['x', 'instagram', 'threads', 'facebook', 'youtube'],
+        description: 'Magazine-style long-form writing with headline options, dek, narrative spine, and memorable ending.',
+        instructions: 'Use a magazine-quality structure: three headline options, one-sentence dek, strong cold open, early nut graf, clear narrative spine, evidence-driven point of view, varied sentence rhythm, and a memorable kicker. Avoid broken fragments and generic filler.'
+      },
+      {
+        id: 'conversation-reply',
+        name: 'Conversation / Reply Writer',
+        platforms: ['x', 'threads', 'facebook'],
+        description: 'Creates natural replies, quote posts, comment responses, and conversation starters.',
+        instructions: 'Add useful context rather than repeating the original. Sound human, specific, and conversational. Provide concise, medium, and detailed versions when the format supports replies.'
+      },
+      {
+        id: 'reel-script',
+        name: 'Reel / Short Script Writer',
+        platforms: ['instagram', 'facebook', 'tiktok', 'youtube'],
+        description: 'Builds hook-first spoken scripts, timed beats, overlays, shots, caption, and CTA.',
+        instructions: 'Write for vertical short-form video. Hook in the first 1.5 seconds, keep one idea per beat, provide a natural spoken script, on-screen text, shot plan, editing cues, caption, cover text, and final CTA.'
+      }
+    ];
+
+    const IMAGE_PROMPT_DATA = [
+      {
+        id: 'auto-native',
+        name: 'Auto · Platform Native',
+        platforms: ['all'],
+        description: 'Automatically chooses the strongest native visual format for the selected generator and platform.',
+        instructions: 'Choose the strongest platform-native visual format. Respect the selected platform dimensions, mobile safe zones, text density, and export requirements.'
+      },
+      {
+        id: 'none',
+        name: 'No Image Prompt',
+        platforms: ['all'],
+        description: 'Creates writing only. No visual concept or image-generation prompt.',
+        instructions: 'Do not create an image concept, image-generation prompt, thumbnail, cover, or visual asset.'
+      },
+      {
+        id: 'prompt-product-card',
+        name: 'Prompt Product Card',
+        platforms: ['all'],
+        description: 'A clean promotional graphic for a prompt, prompt pack, giveaway, or downloadable tool.',
+        instructions: 'Create a premium prompt-product visual. Feature the prompt name, one outcome-focused headline, no more than three concise use cases, and one clear CTA or comment keyword. Use the platform-native aspect ratio, large mobile-readable type, strong hierarchy, minimal clutter, and a text-free alternate.'
+      },
+      {
+        id: 'carousel-forge',
+        name: 'Carousel Forge',
+        platforms: ['x', 'instagram', 'facebook'],
+        description: 'Industrial ivory paper, orange and charcoal, technical marks, voxel hero, and 3D dioramas.',
+        instructions: 'Use the locked Carousel Forge visual system. The selected image system is authoritative for visual styling even when the content generator is different.'
+      },
+      {
+        id: 'editorial-os',
+        name: 'Editorial OS',
+        platforms: ['x', 'instagram', 'facebook'],
+        description: 'Terracotta editorial design built around screenshots, tape, annotations, proof, and walkthroughs.',
+        instructions: 'Use the locked Editorial OS visual system. Prioritize screenshots, proof, annotations, and readable editorial hierarchy.'
+      },
+      {
+        id: 'neon-listicle',
+        name: 'Neon Listicle',
+        platforms: ['x', 'instagram', 'facebook'],
+        description: 'Near-black numbered cards, one neon accent, reflective surfaces, and cinematic metaphor objects.',
+        instructions: 'Use the locked Neon Listicle visual system with one neon accent, numbered hierarchy, reflective dark surfaces, and one cinematic 3D metaphor object per card.'
+      },
+      {
+        id: 'static-feed',
+        name: 'Minimal Static Feed Image',
+        platforms: ['x', 'instagram', 'threads', 'facebook'],
+        description: 'One clear visual idea with minimal type for a standard feed post.',
+        instructions: 'Create one platform-native static image with a single dominant visual concept, minimal text, large mobile-readable hierarchy, center-safe composition, and a text-free alternate.'
+      },
+      {
+        id: 'reel-cover-9x16',
+        name: '9:16 Reel / Short Cover',
+        platforms: ['instagram', 'facebook', 'tiktok', 'youtube'],
+        description: 'Vertical cover frame with safe-zone-aware type and a strong visual hook.',
+        instructions: 'Create a 1080 × 1920 vertical cover frame. Keep the face or hero and critical text inside mobile safe zones. Use a short headline, strong contrast, and no tiny supporting copy.'
+      },
+      {
+        id: 'article-5x2',
+        name: 'Article Image 5:2',
+        platforms: ['x', 'instagram', 'threads', 'facebook', 'youtube'],
+        description: 'Premium 2000 × 800 editorial hero with minimal text and a center-safe composition.',
+        instructions: 'Create a separate 2000 × 800 article hero. Do not crop the native visual. Use one dominant visual idea, minimal text, center-safe composition, and a text-free alternate.'
+      },
+      {
+        id: 'youtube-thumbnail',
+        name: 'YouTube Thumbnail',
+        platforms: ['youtube'],
+        description: 'High-contrast thumbnail concept with minimal wording and clear click promise.',
+        instructions: 'Create a native YouTube thumbnail concept with a clear focal subject, strong contrast, 2–5 words maximum, readable mobile hierarchy, and three alternate concepts.'
+      }
+    ];
+
+    const EXPORT_PRESETS = {
+      instagram: { size: '1080 × 1350', ratio: '4:5 portrait', note: 'Master Instagram feed or carousel format. Keep every slide editable and export each as PNG.' },
+      x: { size: '1600 × 900', ratio: '16:9 landscape', note: 'Use landscape image cards with large mobile-readable type. Rebuild pacing and copy for an X image thread.' },
+      threads: { size: '1080 × 1350', ratio: '4:5 portrait', note: 'Use supporting images with conversational copy and a lighter, discussion-first CTA.' },
+      facebook: { size: '1080 × 1080 / 1080 × 1350 / 1080 × 1920', ratio: '1:1 carousel · 4:5 feed · 9:16 reel/story', note: 'Use 1080 × 1080 for carousel cards, 1080 × 1350 for feed images, and 1080 × 1920 for reels or stories. Keep copy readable and Facebook-native.' },
+      tiktok: { size: '1080 × 1920', ratio: '9:16 vertical', note: 'Build a native reel with timed beats, voiceover, captions, motion, and safe-zone-aware composition.' },
+      youtube: { size: '1280 × 720 / 1080 × 1920', ratio: '16:9 thumbnail · 9:16 Short', note: 'Use 1280 × 720 for standard YouTube thumbnails and 1080 × 1920 for Shorts or vertical covers.' },
+      article: { size: '2000 × 800', ratio: '5:2 landscape', note: 'Create a separate premium editorial hero with one visual idea, minimal text, and a center-safe composition.' }
+    };
+
+
+    const SOCIAL_SPECS = {
+      x: {
+        base: [
+          'Standard X post: 280 characters max.',
+          'Premium long-form X post: up to 25,000 characters when the generator is Long-Form Post or X Article.',
+          'Thread format: keep each individual post at 280 characters or less.',
+          'Native image cards: 1600 × 900 landscape.',
+          'Optional article image: 2000 × 800.'
+        ]
+      },
+      instagram: {
+        base: [
+          'Caption: up to 2,200 characters.',
+          'Hashtags: up to 30 total.',
+          'Feed post or carousel: 1080 × 1350.',
+          'Story or reel cover: 1080 × 1920.'
+        ]
+      },
+      threads: {
+        base: [
+          'Threads post: 500 characters max per post.',
+          'Series format: keep each individual post at 500 characters or less.',
+          'Supporting image format used by the app: 1080 × 1350.'
+        ]
+      },
+      facebook: {
+        base: [
+          'Feed image: 1080 × 1350.',
+          'Carousel cards: 1080 × 1080 square.',
+          'Reel or story: 1080 × 1920 vertical.',
+          'Hard post maximum: 63,206 characters, but standard feed posts should usually stay concise.',
+          'Use short, readable line lengths even when the post is allowed to be longer.'
+        ]
+      },
+      tiktok: {
+        base: [
+          'Caption: up to 4,000 characters.',
+          'Native video: 1080 × 1920 vertical 9:16.',
+          'Cover frame: 1080 × 1920.',
+          'Keep on-screen text short and inside mobile safe zones.'
+        ]
+      },
+      youtube: {
+        base: [
+          'YouTube title: up to 100 characters.',
+          'Description: up to 5,000 characters.',
+          'Standard thumbnail: 1280 × 720 16:9.',
+          'Short or vertical cover: 1080 × 1920.',
+          'Optional article image: 2000 × 800.'
+        ]
+      }
+    };
+
+    const GENERATOR_SPEC_OVERRIDES = {
+      'x-post': [
+        'Final X post must stay within 280 characters.'
+      ],
+      'x-quote': [
+        'Each quote post option must stay within 280 characters.'
+      ],
+      'x-reply': [
+        'Primary reply option must stay within 280 characters.'
+      ],
+      'x-thread': [
+        'Every thread post must stay within 280 characters.'
+      ],
+      'x-long': [
+        'Use Premium long-form formatting and keep the full post within 25,000 characters.'
+      ],
+      'x-article': [
+        'Use Premium long-form formatting and keep the article package within X long-form limits.'
+      ],
+      'ig-post': [
+        'Keep the final caption at or under 2,200 characters.'
+      ],
+      'ig-reel': [
+        'Use a 1080 × 1920 reel package and keep the caption at or under 2,200 characters.'
+      ],
+      'ig-story': [
+        'Build 1080 × 1920 story frames with very short on-frame copy.'
+      ],
+      'threads-post': [
+        'Keep the final Threads post at or under 500 characters.'
+      ],
+      'threads-series': [
+        'Keep every Threads post in the series at or under 500 characters.'
+      ],
+      'threads-story': [
+        'Keep the finished Threads story post at or under 500 characters.'
+      ],
+      'threads-opinion': [
+        'Keep the finished Threads opinion post at or under 500 characters.'
+      ],
+      'threads-question': [
+        'Keep the final question post at or under 500 characters.'
+      ],
+      'ig-to-threads': [
+        'Keep each Threads output at or under 500 characters.'
+      ],
+      'fb-post': [
+        'Use a 1080 × 1350 feed visual.',
+        'Aim for a concise standard feed post unless the material clearly benefits from more detail.'
+      ],
+      'fb-prompt-post': [
+        'Default visual: 1080 × 1350 feed image. Use 1080 × 1080 only when the selected image prompt is a carousel system.',
+        'Keep the main Facebook post concise, scannable, and easy to act on.'
+      ],
+      'fb-ad': [
+        'Primary visual should be 1080 × 1350 unless the ad concept is a square carousel.',
+        'Keep the headline short and the primary text tight and skimmable.'
+      ],
+      'fb-comment-stack': [
+        'Main post should be concise and scannable. Supporting comments can add the extra detail.'
+      ],
+      'fb-giveaway': [
+        'Use a 1080 × 1350 feed visual unless the selected image prompt is a carousel system.'
+      ],
+      'fb-story': [
+        'Use 1080 × 1920 vertical story format with short overlay text.'
+      ],
+      'fb-reel': [
+        'Use a 1080 × 1920 Facebook reel package with a short caption.'
+      ],
+      'tiktok-reel-forge': [
+        'Use 1080 × 1920 vertical video and keep the caption at or under 4,000 characters.'
+      ],
+      'tt-talking': [
+        'Use 1080 × 1920 vertical video and keep the caption at or under 4,000 characters.'
+      ],
+      'tt-screen': [
+        'Use 1080 × 1920 vertical video and keep the caption at or under 4,000 characters.'
+      ],
+      'tt-product': [
+        'Use 1080 × 1920 vertical video and keep the caption at or under 4,000 characters.'
+      ],
+      'tt-storytime': [
+        'Use 1080 × 1920 vertical video and keep the caption at or under 4,000 characters.'
+      ],
+      'tt-carousel-reel': [
+        'Convert the source to 1080 × 1920 vertical video and keep the caption at or under 4,000 characters.'
+      ],
+      'yt-short': [
+        'Use 1080 × 1920 vertical Short format.',
+        'Keep the title at or under 100 characters and the description at or under 5,000 characters.'
+      ],
+      'yt-video': [
+        'Use a native 1280 × 720 thumbnail concept for the long-form video.',
+        'Keep the title at or under 100 characters and the description at or under 5,000 characters.'
+      ],
+      'yt-outline': [
+        'If a title is provided, keep it at or under 100 characters.'
+      ],
+      'yt-title': [
+        'Every title option must stay at or under 100 characters.'
+      ],
+      'yt-thumbnail': [
+        'Use a native 1280 × 720 YouTube thumbnail concept.'
+      ],
+      'yt-package': [
+        'Keep the description at or under 5,000 characters.'
+      ],
+      'article-image': [
+        'Article image format is 2000 × 800 5:2.'
+      ]
+    };
+
+    function getPlatformSpecLines(platformId, generatorId = null) {
+      const base = [...(SOCIAL_SPECS[platformId]?.base || [])];
+      const extra = generatorId ? (GENERATOR_SPEC_OVERRIDES[generatorId] || []) : [];
+      return [...base, ...extra];
+    }
+
+    function buildPlatformSpecHtml(platformId, generatorId = null) {
+      const lines = getPlatformSpecLines(platformId, generatorId);
+      return `<strong>${PLATFORM_DATA[platformId].name} rules</strong><ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`;
+    }
+
+    function buildPlatformSpecPrompt(platformId, generatorId = null) {
+      return getPlatformSpecLines(platformId, generatorId).map((line) => `- ${line}`).join('\n');
+    }
+
+    const DEFAULT_STATE = {
+      version: 6,
+      selectedPlatform: 'instagram',
+      brand: {
+        name: 'Your Brand',
+        handle: '',
+        audience: 'Local business owners and creators',
+        rules: 'Use direct language. Keep copy easy to paste. Avoid em dashes. End with a clear action when appropriate.'
+      },
+      projects: []
+    };
+
+    let state = structuredClone(DEFAULT_STATE);
+    let wizard = { step: 1, platform: 'instagram', generator: 'carousel-forge', assets: [] };
+    let activeProject = null;
+
+    /* AI settings live OUTSIDE the exportable state so an exported/shared file
+       never carries the API key. Stored on-device only. */
+    const DEFAULT_SETTINGS = { openaiKey: '', textModel: 'gpt-4o-mini', imageModel: 'gpt-image-1', imageSize: '1024x1024' };
+    let settings = { ...DEFAULT_SETTINGS };
+    function loadSettings() {
+      try { const s = JSON.parse(localStorage.getItem('contentForgeSettings') || 'null'); if (s) settings = { ...DEFAULT_SETTINGS, ...s }; } catch (error) { /* ignore */ }
+    }
+    function saveSettings() {
+      try { localStorage.setItem('contentForgeSettings', JSON.stringify(settings)); } catch (error) { showToast('Could not save AI settings on this device.'); }
+    }
+    /* Generated images are kept in-session only (not in saved state) so large
+       image data never blows the browser storage quota. Text is saved on the project. */
+    let sessionImages = {};
+    const canGenerate = () => !window.__ARTIFACT__;
+    let activeEditorView = 'prompt';
+    let toastTimer = null;
+
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+    function escapeHtml(value = '') {
+      return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+    }
+
+    function titleCase(value) {
+      return value.replace(/(^|\s)\S/g, (char) => char.toUpperCase());
+    }
+
+    function getGenerator(platformId, generatorId) {
+      const row = PLATFORM_DATA[platformId]?.generators.find((item) => item[0] === generatorId);
+      return row ? { id: row[0], title: row[1], description: row[2], output: row[3], icon: row[4] } : null;
+    }
+
+
+    function promptAvailable(option, platformId) {
+      return option.platforms.includes('all') || option.platforms.includes(platformId);
+    }
+
+    function getWritingPrompt(id) {
+      return WRITING_PROMPT_DATA.find((item) => item.id === id) || WRITING_PROMPT_DATA[0];
+    }
+
+    function getImagePrompt(id) {
+      return IMAGE_PROMPT_DATA.find((item) => item.id === id) || IMAGE_PROMPT_DATA[0];
+    }
+
+    function getDefaultPromptSelection(platformId, generatorId) {
+      if (generatorId === 'fb-prompt-post') return { writing: 'prompt-post', image: 'prompt-product-card' };
+      if (generatorId.includes('carousel-forge')) return { writing: 'carousel-copy', image: 'carousel-forge' };
+      if (generatorId.includes('editorial-os')) return { writing: 'carousel-copy', image: 'editorial-os' };
+      if (generatorId.includes('neon-listicle')) return { writing: 'carousel-copy', image: 'neon-listicle' };
+      if (generatorId === 'article-image' || generatorId === 'x-article') return { writing: 'marquee-longform', image: 'article-5x2' };
+      if (generatorId.includes('giveaway')) return { writing: 'giveaway-lead', image: 'prompt-product-card' };
+      if (generatorId.includes('reel') || generatorId.startsWith('tt-') || generatorId === 'yt-short') return { writing: 'reel-script', image: 'reel-cover-9x16' };
+      if (generatorId.includes('reply') || generatorId.includes('quote') || generatorId.includes('question')) return { writing: 'conversation-reply', image: 'none' };
+      if (platformId === 'facebook') return { writing: 'platform-native', image: 'static-feed' };
+      return { writing: 'platform-native', image: 'auto-native' };
+    }
+
+    function buildSelectedPromptLayers(project) {
+      const writing = getWritingPrompt(project.writingPromptId || 'platform-native');
+      const image = getImagePrompt(project.imagePromptId || 'auto-native');
+      return `## SELECTED WRITING PROMPT\n${writing.name}\n${writing.instructions}\n\n## SELECTED IMAGE PROMPT\n${image.name}\n${image.instructions}\n\nThe selected writing prompt controls the copy structure and voice. The selected image prompt controls the visual treatment. When another bundled visual prompt conflicts with the selected image prompt, the selected image prompt is authoritative.`;
+    }
+
+    function formatDate(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+
+    function showToast(message) {
+      const toast = $('#toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    async function copyText(text) {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+      } catch (error) {
+        console.warn('Clipboard API unavailable, using fallback.', error);
+      }
+      const helper = document.createElement('textarea');
+      helper.value = text;
+      helper.style.position = 'fixed';
+      helper.style.opacity = '0';
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand('copy');
+      helper.remove();
+    }
+
+    async function saveState() {
+      try {
+        if (window.contentForge?.saveData) {
+          await window.contentForge.saveData(state);
+        } else {
+          localStorage.setItem('contentForgeState', JSON.stringify(state));
+        }
+      } catch (error) {
+        console.error(error);
+        showToast('Could not save app data.');
+      }
+    }
+
+    async function loadState() {
+      try {
+        let saved = null;
+        if (window.contentForge?.loadData) saved = await window.contentForge.loadData();
+        else saved = JSON.parse(localStorage.getItem('contentForgeState') || 'null');
+        if (saved && saved.projects && saved.brand) state = { ...structuredClone(DEFAULT_STATE), ...saved };
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    function renderMode() {
+      $('#appName').textContent = 'Content Forge';
+      $('#appSubtitle').textContent = 'Create once. Publish everywhere.';
+      $('#heroEyebrow').textContent = 'Create once. Publish everywhere.';
+    }
+
+    function renderPlatformTabs() {
+      $('#platformTabs').innerHTML = Object.entries(PLATFORM_DATA).map(([id, platform]) => `
+        <button class="platform-tab ${state.selectedPlatform === id ? 'active' : ''}" data-platform="${id}">
+          <span aria-hidden="true">${platform.icon}</span>&nbsp; ${platform.name}
+        </button>
+      `).join('');
+      $$('.platform-tab').forEach((button) => button.addEventListener('click', () => {
+        state.selectedPlatform = button.dataset.platform;
+        saveState();
+        renderPlatformTabs();
+        renderGenerators();
+      }));
+    }
+
+    function renderGenerators() {
+      const platform = PLATFORM_DATA[state.selectedPlatform];
+      $('#generatorHeading').textContent = `${platform.name} Generators`;
+      $('#generatorSubheading').textContent = platform.description;
+      $('#startPlatformBtn').textContent = `Start ${platform.name} Content`;
+      $('#generatorGrid').innerHTML = platform.generators.map(([id, title, description, output, icon]) => `
+        <article class="generator-card" data-generator="${id}">
+          <div class="generator-icon">${icon}</div>
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(description)}</p>
+          <div class="generator-meta"><span>${escapeHtml(output)}</span><span>Start →</span></div>
+        </article>
+      `).join('');
+      $$('.generator-card').forEach((card) => card.addEventListener('click', () => openWizard(state.selectedPlatform, card.dataset.generator)));
+    }
+
+    function renderRecent() {
+      const projects = [...state.projects].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 7);
+      const continueBtn = $('#continueCampaignBtn');
+      if (projects.length) {
+        continueBtn.textContent = 'Continue: ' + (projects[0].name.length > 26 ? projects[0].name.slice(0, 25).trimEnd() + '…' : projects[0].name);
+        continueBtn.dataset.projectId = projects[0].id;
+        continueBtn.classList.remove('hidden');
+      } else {
+        continueBtn.classList.add('hidden');
+      }
+      if (!projects.length) {
+        $('#recentList').innerHTML = `<div class="recent-empty">No campaigns yet.<br>Start with an Instagram carousel or choose a platform generator.</div>`;
+        return;
+      }
+      $('#recentList').innerHTML = projects.map((project) => `
+        <div class="project-row" data-project-id="${project.id}">
+          <div class="project-badge">${PLATFORM_DATA[project.platform]?.icon || '•'}</div>
+          <div>
+            <div class="project-title">${escapeHtml(project.name)}</div>
+            <div class="project-sub">${escapeHtml(PLATFORM_DATA[project.platform]?.name || project.platform)} · ${escapeHtml(project.generatorTitle)}</div>
+          </div>
+          <div class="project-time">${formatDate(project.updatedAt)}</div>
+        </div>
+      `).join('');
+      $$('.project-row').forEach((row) => row.addEventListener('click', () => openProject(row.dataset.projectId)));
+    }
+
+    function openWizard(platform = state.selectedPlatform, generator = null) {
+      wizard = {
+        step: 1,
+        platform,
+        generator: generator || PLATFORM_DATA[platform].generators[0][0],
+        writingPrompt: 'platform-native',
+        imagePrompt: 'auto-native',
+        assets: []
+      };
+      const initialPrompts = getDefaultPromptSelection(wizard.platform, wizard.generator);
+      wizard.writingPrompt = initialPrompts.writing;
+      wizard.imagePrompt = initialPrompts.image;
+      $('#projectNameInput').value = '';
+      $('#briefInput').value = '';
+      $('#brandInput').value = state.brand.name;
+      $('#audienceInput').value = state.brand.audience;
+      $('#goalInput').value = 'Educate';
+      $('#toneInput').value = 'Direct and confident';
+      $('#ctaInput').value = '';
+      $('#keywordInput').value = '';
+      $('#handleInput').value = state.brand.handle;
+      $('#assetPreviews').innerHTML = '';
+      renderWizardPlatformSelect();
+      renderWizardGenerators();
+      renderPromptSelectors();
+      renderAdaptChecks();
+      renderOutputFormats();
+      renderPlatformSpecBox();
+      updateWizardStep();
+      $('#wizardBackdrop').classList.remove('hidden');
+    }
+
+    function closeWizard() {
+      $('#wizardBackdrop').classList.add('hidden');
+    }
+
+    function renderWizardPlatformSelect() {
+      $('#wizardPlatform').innerHTML = Object.entries(PLATFORM_DATA).map(([id, platform]) => `<option value="${id}" ${wizard.platform === id ? 'selected' : ''}>${platform.name}</option>`).join('');
+    }
+
+    function renderWizardGenerators() {
+      $('#wizardGeneratorGrid').innerHTML = PLATFORM_DATA[wizard.platform].generators.map(([id, title, description, output, icon]) => `
+        <div class="choice-card ${wizard.generator === id ? 'selected' : ''}" data-wizard-generator="${id}">
+          <strong>${icon} ${escapeHtml(title)}</strong>
+          <span>${escapeHtml(description)}</span>
+        </div>
+      `).join('');
+      $$('[data-wizard-generator]').forEach((card) => card.addEventListener('click', () => {
+        wizard.generator = card.dataset.wizardGenerator;
+        const defaults = getDefaultPromptSelection(wizard.platform, wizard.generator);
+        wizard.writingPrompt = defaults.writing;
+        wizard.imagePrompt = defaults.image;
+        renderWizardGenerators();
+        renderPromptSelectors();
+        renderPlatformSpecBox();
+      }));
+    }
+
+    function renderPromptSelectors(forceDefaults = false) {
+      const defaults = getDefaultPromptSelection(wizard.platform, wizard.generator);
+      const writingOptions = WRITING_PROMPT_DATA.filter((item) => promptAvailable(item, wizard.platform));
+      const imageOptions = IMAGE_PROMPT_DATA.filter((item) => promptAvailable(item, wizard.platform));
+
+      if (forceDefaults || !writingOptions.some((item) => item.id === wizard.writingPrompt)) wizard.writingPrompt = defaults.writing;
+      if (forceDefaults || !imageOptions.some((item) => item.id === wizard.imagePrompt)) wizard.imagePrompt = defaults.image;
+
+      const writingSelect = $('#writingPromptSelect');
+      const imageSelect = $('#imagePromptSelect');
+      writingSelect.innerHTML = writingOptions.map((item) => `<option value="${item.id}" ${item.id === wizard.writingPrompt ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('');
+      imageSelect.innerHTML = imageOptions.map((item) => `<option value="${item.id}" ${item.id === wizard.imagePrompt ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('');
+
+      const updateHints = () => {
+        const writing = getWritingPrompt(wizard.writingPrompt);
+        const image = getImagePrompt(wizard.imagePrompt);
+        $('#writingPromptHint').textContent = writing.description;
+        $('#imagePromptHint').textContent = image.description;
+      };
+
+      writingSelect.onchange = (event) => { wizard.writingPrompt = event.target.value; updateHints(); renderPlatformSpecBox(); };
+      imageSelect.onchange = (event) => { wizard.imagePrompt = event.target.value; updateHints(); renderPlatformSpecBox(); };
+      updateHints();
+    }
+
+    function renderAdaptChecks() {
+      $('#adaptChecks').innerHTML = Object.entries(PLATFORM_DATA).map(([id, platform]) => `
+        <div class="check-chip">
+          <input type="checkbox" id="adapt-${id}" value="${id}" ${id === wizard.platform ? 'checked disabled' : (wizard.platform === 'instagram' ? 'checked' : '')} />
+          <label for="adapt-${id}">${platform.name}</label>
+        </div>
+      `).join('');
+    }
+
+    function renderOutputFormats() {
+      const container = $('#outputFormatChecks');
+      const note = $('#outputFormatNote');
+      if (wizard.platform === 'tiktok') {
+        container.innerHTML = `
+          <label class="platform-check"><input type="checkbox" value="native" checked disabled /><span>9:16 TikTok reel · 1080 × 1920</span></label>
+          <label class="platform-check"><input type="checkbox" value="tiktok-cover" checked /><span>9:16 cover frame · 1080 × 1920</span></label>`;
+        note.textContent = 'TikTok is built vertically. The app creates the reel and a matching 9:16 cover frame, not a 5:2 article image.';
+        return;
+      }
+      container.innerHTML = `
+        <label class="platform-check"><input type="checkbox" value="native" checked /><span>Platform-native visual</span></label>
+        <label class="platform-check"><input type="checkbox" value="article-5x2" checked /><span>5:2 article image · 2000 × 800</span></label>`;
+      note.textContent = 'The 5:2 option creates a separate editorial cover with minimal text. It does not stretch the platform-native design.';
+    }
+
+    function renderPlatformSpecBox() {
+      const box = $('#platformSpecBox');
+      if (!box) return;
+      box.innerHTML = buildPlatformSpecHtml(wizard.platform, wizard.generator);
+    }
+
+    function updateWizardStep() {
+      $$('.wizard-step').forEach((step) => step.classList.toggle('hidden', Number(step.dataset.step) !== wizard.step));
+      $$('[data-step-indicator]').forEach((indicator) => {
+        const number = Number(indicator.dataset.stepIndicator);
+        indicator.classList.toggle('active', number === wizard.step);
+        indicator.classList.toggle('done', number < wizard.step);
+      });
+      $('#wizardBackBtn').textContent = wizard.step === 1 ? 'Cancel' : 'Back';
+      $('#wizardNextBtn').textContent = wizard.step === 3 ? 'Create Campaign' : 'Next';
+      const generator = getGenerator(wizard.platform, wizard.generator);
+      $('#wizardSubtitle').textContent = wizard.step === 1
+        ? 'Pick the platform, generator, writing prompt, and image prompt.'
+        : wizard.step === 2
+          ? `Add the source material for ${generator?.title || 'this campaign'}.`
+          : 'Set the audience, goal, CTA, and platform adaptations.';
+    }
+
+    async function handleImageFiles(files) {
+      const remaining = Math.max(0, 6 - wizard.assets.length);
+      const picked = [...files].slice(0, remaining);
+      for (const file of picked) {
+        if (!file.type.startsWith('image/')) continue;
+        try {
+          const dataUrl = await compressImage(file);
+          wizard.assets.push({ name: file.name, type: file.type, dataUrl });
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      renderAssetPreviews();
+    }
+
+    function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = reject;
+          image.onload = () => {
+            const max = 1400;
+            const scale = Math.min(1, max / Math.max(image.width, image.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', .82));
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderAssetPreviews() {
+      $('#assetPreviews').innerHTML = wizard.assets.map((asset, index) => `
+        <div class="asset-thumb">
+          <img src="${asset.dataUrl}" alt="${escapeHtml(asset.name)}" />
+          <button data-remove-asset="${index}" title="Remove">✕</button>
+        </div>
+      `).join('');
+      $$('[data-remove-asset]').forEach((button) => button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        wizard.assets.splice(Number(button.dataset.removeAsset), 1);
+        renderAssetPreviews();
+      }));
+    }
+
+    async function readMasterPrompt(generatorId) {
+      const promptFiles = {
+        'carousel-forge': 'CAROUSEL-FORGE-v1.md',
+        'x-carousel-forge': 'CAROUSEL-FORGE-v1.md',
+        'fb-carousel-forge': 'CAROUSEL-FORGE-v1.md',
+        'editorial-os': 'editorial-os-instagram-carousel-prompt.md',
+        'x-editorial-os': 'editorial-os-instagram-carousel-prompt.md',
+        'fb-editorial-os': 'editorial-os-instagram-carousel-prompt.md',
+        'neon-listicle': 'NEON-LISTICLE-CAROUSEL-v1.md',
+        'x-neon-listicle': 'NEON-LISTICLE-CAROUSEL-v1.md',
+        'fb-neon-listicle': 'NEON-LISTICLE-CAROUSEL-v1.md',
+        'fb-prompt-post': 'FACEBOOK-PROMPT-POST-v1.md',
+        'tiktok-reel-forge': 'TIKTOK-REEL-FORGE-v1.md',
+        'article-image': 'ARTICLE-IMAGE-5x2-v1.md'
+      };
+      const fallbacks = {
+        'carousel-forge': `# CAROUSEL FORGE v1
+
+Build a seven-slide 1080 × 1350 carousel using the locked industrial paper, orange, charcoal, technical-grid, voxel hero, and 3D diorama system.`,
+        'editorial-os': `# EDITORIAL OS
+
+Build an eight-slide 1080 × 1350 carousel using the locked terracotta, off-white, near-black, screenshot-led editorial system and five-step narrative.`,
+        'neon-listicle': `# NEON LISTICLE CAROUSEL v1
+
+Build a premium dark numbered carousel using one neon accent, a reflective floor, condensed type, and one cinematic 3D metaphor object per slide.`,
+        'tiktok-reel-forge': `# TIKTOK REEL FORGE v1
+
+Build a complete 1080 × 1920 reel package with a first-1.5-second hook, timed script, shots, overlay text, edits, caption, CTA, pinned comment, and asset map.`,
+        'article-image': `# ARTICLE IMAGE 5:2
+
+Build a premium 2000 × 800 article hero with minimal text, one dominant visual idea, and a center-safe editorial composition.`,
+        'fb-prompt-post': `# FACEBOOK PROMPT POST v1
+
+Promote a reusable AI prompt or prompt pack with a strong hook, concrete use cases, comment-keyword CTA, pinned comment, delivery DM, and selected image system.`
+      };
+      const filename = promptFiles[generatorId];
+      if (!filename) return null;
+      try {
+        if (window.contentForge?.readPrompt) return await window.contentForge.readPrompt(filename);
+      } catch (error) {
+        console.error(error);
+      }
+      const baseId = generatorId.replace(/^x-/, '').replace(/^fb-/, '');
+      return fallbacks[generatorId] || fallbacks[baseId] || null;
+    }
+
+    async function readSelectedImagePrompt(imagePromptId) {
+      const files = {
+        'carousel-forge': 'CAROUSEL-FORGE-v1.md',
+        'editorial-os': 'editorial-os-instagram-carousel-prompt.md',
+        'neon-listicle': 'NEON-LISTICLE-CAROUSEL-v1.md',
+        'article-5x2': 'ARTICLE-IMAGE-5x2-v1.md'
+      };
+      const filename = files[imagePromptId];
+      if (!filename) return null;
+      try {
+        if (window.contentForge?.readPrompt) return await window.contentForge.readPrompt(filename);
+      } catch (error) {
+        console.error(error);
+      }
+      return getImagePrompt(imagePromptId).instructions;
+    }
+
+    function buildGenericPrompt(project) {
+      const platform = PLATFORM_DATA[project.platform];
+      const generator = getGenerator(project.platform, project.generator);
+      const outputRequirements = {
+        'x-carousel-forge': 'Return: a complete X-native 1600 × 900 landscape card sequence, finished X post or thread copy, and an optional 5:2 article cover.',
+        'x-editorial-os': 'Return: a screenshot-led 1600 × 900 X editorial card sequence, finished post copy, source placeholders, and an optional 5:2 article cover.',
+        'x-neon-listicle': 'Return: a numbered 1600 × 900 dark X carousel, image-thread copy, CTA, and an optional 5:2 article cover.',
+        'fb-carousel-forge': 'Return: a complete 1080 × 1080 Facebook carousel, long-form caption, first comment, CTA, and optional 5:2 article cover.',
+        'fb-editorial-os': 'Return: an eight-card 1080 × 1080 Facebook editorial carousel, longer explanatory copy, proof cues, CTA, and optional 5:2 article cover.',
+        'fb-neon-listicle': 'Return: a numbered 1080 × 1080 dark Facebook carousel, long caption, first comment, CTA, and optional 5:2 article cover.',
+        'article-image': 'Return: three 5:2 hero concepts, the recommended 2000 × 800 composition, exact minimal text, safe-zone direction, final image prompt, and a text-free alternate.',
+        'x-post': 'Return: three hook options, one final X post, one optional image concept, and one engagement CTA.',
+        'x-long': 'Return: three headline options, one finished long-form X post, a strong opening, evidence or examples, a memorable close, and an optional companion post.',
+        'x-article': 'Return: three headline options, a one-sentence dek, hero image concept, full magazine-style article, sources section placeholder, and companion X post.',
+        'x-thread': 'Return: a numbered thread with a first-post hook, one idea per post, useful proof, and final CTA.',
+        'x-quote': 'Return: three concise quote-post options. Each must add context, teach something, or sharpen the thesis.',
+        'x-reply': 'Return: five reply options ranked from concise to detailed. Sound human, useful, and conversation-worthy.',
+        'ig-post': 'Return: three hooks, final Instagram caption, on-image headline, supporting line, visual brief, hashtags, and engagement CTA.',
+        'ig-reel': 'Return: hook, spoken script, shot-by-shot plan, on-screen text, caption, CTA, and suggested duration.',
+        'ig-story': 'Return: a 5–8 frame story sequence with exact text, visual direction, poll/question/link actions, and final CTA.',
+        'ig-giveaway': 'Return: giveaway post, entry rules, comment keyword, story sequence, reminder post, winner announcement, and visual brief.',
+        'threads-post': 'Return: three conversational hooks, one final Threads post, and a natural question that earns replies.',
+        'threads-series': 'Return: a connected multi-post sequence with a strong first post, clean pacing, and a conversational ending.',
+        'threads-story': 'Return: a finished story post with setup, tension, turning point, lesson, and discussion prompt.',
+        'threads-opinion': 'Return: three thesis options and one finished opinion post supported by clear reasoning.',
+        'threads-question': 'Return: ten strong community questions and select the best one with a short setup.',
+        'ig-to-threads': 'Convert the source into Threads-native copy. Do not simply paste the Instagram caption. Return one short and one expanded version.',
+        'fb-post': 'Return: three opening hooks, one finished Facebook post, an optional first comment, and a 1080 × 1350 feed visual brief.',
+        'fb-prompt-post': 'Return: three hooks, one finished Facebook prompt post, benefit and use-case bullets, comment-keyword CTA, pinned first comment, delivery DM, reminder comment, and a visual brief using the selected image prompt.',
+        'fb-ad': 'Return: primary text, headline, description, CTA, audience angle, offer framing, and creative brief.',
+        'fb-comment-stack': 'Return: one main Facebook post plus seven planned author comments that add proof, handle objections, and lead to the CTA.',
+        'fb-giveaway': 'Return: finished giveaway post, rules, keyword CTA, reminder post, pinned comment, and image brief.',
+        'fb-story': 'Return: a 1080 × 1920 Facebook story sequence with fast hook, proof, outcome, overlay text, and tap-through CTA.',
+        'fb-reel': 'Return: a 1080 × 1920 Facebook reel with hook, spoken script, shot list, on-screen text, caption, CTA, and pinned comment.',
+        'tt-talking': 'Return: a natural talking-head script with delivery notes, pauses, emphasis, B-roll options, and CTA.',
+        'tt-screen': 'Return: a screen-recording timeline with voiceover, cursor or zoom actions, exact overlay text, caption, and CTA.',
+        'tt-storytime': 'Return: opening tension, story beats, payoff, lesson, on-screen text, caption, and pinned comment.',
+        'tt-product': 'Return: problem hook, product reveal, demonstration steps, proof moment, timed reel script, CTA, shot list, caption, and pinned comment.',
+        'tt-carousel-reel': 'Turn the source carousel into a native 9:16 TikTok reel. Return a compressed beat structure, full voiceover, timed visual plan, zoom/crop/motion instructions, overlay text, caption, and pinned comment.',
+        'yt-short': 'Return: five title options, hook, 30–60 second script, shot list, on-screen text, description, and CTA.',
+        'yt-video': 'Return: title options, thumbnail concepts, cold open, full outline, complete script, B-roll notes, description, chapters, and pinned comment.',
+        'yt-outline': 'Return: title options, viewer promise, section-by-section outline, proof needed, B-roll plan, and ending.',
+        'yt-title': 'Return: 20 title options grouped by direct, curiosity, proof, and contrarian angles. Rank the top five.',
+        'yt-thumbnail': 'Return: five minimal thumbnail concepts with exact text, hero subject, composition, contrast, and what to avoid.',
+        'yt-package': 'Return: finished description, chapters, links section, disclaimer placeholder, pinned comment, and community post.'
+      };
+
+      return `# CONTENT FORGE PROJECT\n\nYou are a senior ${platform.name} content strategist, copywriter, creative director, and platform-native editor.\n\nCreate finished, public-facing content. Do not talk about the internal workflow. Do not use generic AI filler. Use direct language and avoid em dashes.\n\n## PLATFORM\n${platform.name}\n\n## GENERATOR\n${generator.title}\n\n## PROJECT\nNAME: ${project.name}\nBRAND: ${project.brand}\nHANDLE: ${project.handle || 'Not supplied'}\nAUDIENCE: ${project.audience || 'Make the strongest reasonable assumption'}\nGOAL: ${project.goal}\nTONE: ${project.tone}\nOFFER OR CTA: ${project.cta || 'Choose the strongest appropriate action'}\nCOMMENT KEYWORD: ${project.keyword || 'None'}\nREFERENCE ASSETS: ${project.assets.length ? project.assets.map((asset) => asset.name).join(', ') : 'None supplied'}\nSTANDING BRAND RULES: ${state.brand.rules || 'None'}\n\n## SOURCE MATERIAL\n${project.brief || 'Use the project name and settings to make the strongest reasonable content concept.'}\n\n## REQUIRED OUTPUT\n${outputRequirements[project.generator] || 'Return complete platform-native copy, visual direction, CTA, and any supporting assets needed.'}\n\n${buildSelectedPromptLayers(project)}\n\n## QUALITY RULES\n- Write for the actual audience, not the app operator.\n- Keep claims grounded in the supplied material.\n- Never invent statistics, testimonials, results, or customer details.\n- Match the chosen tone without sounding like a template.\n- Make all finished copy easy to copy and paste.\n- Include Like, Follow, Share, Save, Comment, or Subscribe only when they support the stated goal.\n\nCreate the finished package now.`;
+    }
+
+    async function buildProjectPrompt(project) {
+      const masterPrompt = await readMasterPrompt(project.generator);
+      const selectedImageMaster = await readSelectedImagePrompt(project.imagePromptId);
+      if (!masterPrompt && !selectedImageMaster) return buildGenericPrompt(project);
+
+      const common = {
+        topic: project.brief || project.name,
+        audience: project.audience || 'Make the strongest reasonable assumption',
+        goal: project.goal,
+        cta: project.cta || 'Choose the strongest appropriate CTA',
+        assets: project.assets.length ? project.assets.map((asset) => asset.name).join(', ') : 'None supplied',
+        keyword: project.keyword || 'None',
+        handle: project.handle || 'Not supplied',
+        article: project.platform !== 'tiktok' && (project.outputFormats || []).includes('article-5x2')
+          ? 'YES — also create a separate 2000 × 800 (5:2) article hero. Use minimal text and do not crop the native layout.'
+          : 'NO'
+      };
+
+      const generatorId = project.generator;
+      const isForge = generatorId.includes('carousel-forge');
+      const isEditorial = generatorId.includes('editorial-os');
+      const isNeon = generatorId.includes('neon-listicle');
+      let request = '';
+
+      if (isForge) {
+        const format = project.platform === 'x'
+          ? 'X FORMAT: 1600 × 900 landscape cards. Use 4–7 cards, large type, fewer words, and a matching X image-thread post.'
+          : project.platform === 'facebook'
+            ? 'FACEBOOK FORMAT: 1080 × 1080 square carousel cards. Keep 7 cards, increase body readability, and include a long Facebook caption plus first comment.'
+            : 'INSTAGRAM FORMAT: 1080 × 1350 portrait. Keep the locked seven-slide master structure.';
+        request = `TOPIC: ${common.topic}
+AUDIENCE: ${common.audience}
+GOAL: ${common.goal}
+OFFER OR CTA: ${common.cta}
+BRAND NAME: ${project.brand}
+COMMENT KEYWORD: ${common.keyword}
+MASCOT OR HERO: Use the supplied reference image if one clearly defines a hero. Otherwise use the locked default.
+${format}
+REFERENCE ASSETS: ${common.assets}
+ARTICLE IMAGE 5:2: ${common.article}
+STANDING BRAND RULES: ${state.brand.rules || 'None'}
+
+BUILD THE PLATFORM-NATIVE CAROUSEL.`;
+      } else if (isEditorial) {
+        const format = project.platform === 'x'
+          ? 'Rebuild as 4–7 landscape 1600 × 900 X image cards. Condense text, keep screenshots readable, and supply the finished X post or thread.'
+          : project.platform === 'facebook'
+            ? 'Keep an eight-card 1080 × 1080 Facebook carousel. Use larger explanatory type and include a Facebook-native long caption and first comment.'
+            : 'Keep the locked eight-slide 1080 × 1350 Instagram system.';
+        request = `Turn the material below into an EDITORIAL OS carousel for ${PLATFORM_DATA[project.platform].name}. ${format}
+
+TOPIC: ${project.name}
+AUDIENCE: ${common.audience}
+PRIMARY TAKEAWAY: ${common.goal}
+SOURCE MATERIAL: ${common.topic}
+CTA: ${common.cta}
+BRAND/ACCOUNT: ${project.brand}
+HANDLE: ${common.handle}
+SCREENSHOTS/VISUAL ASSETS: ${common.assets}
+ARTICLE IMAGE 5:2: ${common.article}
+STANDING BRAND RULES: ${state.brand.rules || 'None'}
+OUTPUT MODE: Slide or card specifications first.`;
+      } else if (isNeon) {
+        const format = project.platform === 'x'
+          ? '1600 × 900 landscape X cards with mobile-readable condensed type and a matching image-thread post.'
+          : project.platform === 'facebook'
+            ? '1080 × 1080 square Facebook carousel cards with larger readability and a longer caption.'
+            : '1080 × 1350 portrait Instagram carousel.';
+        request = `TOPIC: ${common.topic}
+AUDIENCE: ${common.audience}
+LIST COUNT: Select the strongest count for the material, default 5
+GOAL: ${common.goal}
+OFFER OR CTA: ${common.cta}
+BRAND NAME: ${project.brand}
+HANDLE: ${common.handle}
+COMMENT KEYWORD: ${common.keyword}
+ACCENT COLOR: Use the brand accent when supplied; otherwise molten orange
+HERO STYLE: Cinematic 3D metaphor objects
+DESTINATION FORMAT: ${format}
+REFERENCE ASSETS: ${common.assets}
+ARTICLE IMAGE 5:2: ${common.article}
+STANDING BRAND RULES: ${state.brand.rules || 'None'}
+
+BUILD THE PLATFORM-NATIVE NEON LISTICLE.`;
+      } else if (project.generator === 'fb-prompt-post') {
+        request = `PROMPT OR PROMPT PACK: ${project.name}
+SOURCE MATERIAL: ${common.topic}
+AUDIENCE: ${common.audience}
+GOAL: ${common.goal}
+OFFER OR CTA: ${common.cta}
+COMMENT KEYWORD: ${common.keyword}
+BRAND: ${project.brand}
+HANDLE: ${common.handle}
+AVAILABLE ASSETS: ${common.assets}
+FACEBOOK VISUAL: Use the selected image prompt. Default native feed image is 1080 × 1350; use 1080 × 1080 only when the selected visual is a multi-card carousel.
+ARTICLE IMAGE 5:2: ${common.article}
+STANDING BRAND RULES: ${state.brand.rules || 'None'}
+
+BUILD THE COMPLETE FACEBOOK PROMPT-POST CAMPAIGN.`;
+      } else if (project.generator === 'tiktok-reel-forge') {
+        request = `TOPIC: ${project.name}
+SOURCE MATERIAL: ${common.topic}
+AUDIENCE: ${common.audience}
+GOAL: ${common.goal}
+FORMAT: Auto-select
+TARGET LENGTH: 20–35 seconds unless the material requires otherwise
+OFFER OR CTA: ${common.cta}
+COMMENT KEYWORD: ${common.keyword}
+BRAND: ${project.brand}
+HANDLE: ${common.handle}
+AVAILABLE ASSETS: ${common.assets}
+NATIVE OUTPUT: 1080 × 1920 vertical reel plus a matching 1080 × 1920 cover frame. Keep critical text inside TikTok safe zones.
+STANDING BRAND RULES: ${state.brand.rules || 'None'}
+
+BUILD THE REEL.`;
+      } else if (project.generator === 'article-image') {
+        request = `TOPIC OR ARTICLE: ${common.topic}
+PLATFORM CONTEXT: ${PLATFORM_DATA[project.platform].name}
+AUDIENCE: ${common.audience}
+GOAL: ${common.goal}
+BRAND: ${project.brand}
+HANDLE: ${common.handle}
+CTA OR OFFER: ${common.cta}
+REFERENCE ASSETS: ${common.assets}
+STANDING BRAND RULES: ${state.brand.rules || 'None'}
+
+BUILD THE 2000 × 800 ARTICLE HERO AND TEXT-FREE ALTERNATE.`;
+      }
+
+      if (!request) request = buildGenericPrompt(project);
+      const imageMasterBlock = selectedImageMaster && selectedImageMaster !== masterPrompt
+        ? `
+
+---
+
+# SELECTED IMAGE PROMPT MASTER
+
+${selectedImageMaster}`
+        : '';
+      return `${masterPrompt || ''}${imageMasterBlock}
+
+---
+
+# CURRENT CONTENT FORGE PROJECT
+
+${request}
+
+# PLATFORM FORMAT AND CHARACTER RULES
+
+${buildPlatformSpecPrompt(project.platform, project.generator)}
+
+${buildSelectedPromptLayers(project)}`;
+    }
+
+    function collectAdaptations() {
+      return $$('#adaptChecks input:checked').map((input) => input.value);
+    }
+
+    function collectOutputFormats() {
+      const formats = $$('#outputFormatChecks input:checked').map((input) => input.value);
+      if (wizard.platform === 'tiktok') {
+        return formats.filter((format) => format !== 'article-5x2').length
+          ? formats.filter((format) => format !== 'article-5x2')
+          : ['native'];
+      }
+      if (wizard.imagePrompt === 'article-5x2' && !formats.includes('article-5x2')) formats.push('article-5x2');
+      return formats.length ? formats : ['native'];
+    }
+
+    async function createProject() {
+      const generator = getGenerator(wizard.platform, wizard.generator);
+      const brief = $('#briefInput').value.trim();
+      const name = $('#projectNameInput').value.trim() || brief.split(/\n|\.|\?|!/)[0].slice(0, 64) || `${generator.title} Project`;
+      const now = Date.now();
+      const project = {
+        id: `project-${now}-${Math.random().toString(36).slice(2, 7)}`,
+        name,
+        platform: wizard.platform,
+        generator: wizard.generator,
+        generatorTitle: generator.title,
+        writingPromptId: wizard.writingPrompt,
+        writingPromptTitle: getWritingPrompt(wizard.writingPrompt).name,
+        imagePromptId: wizard.imagePrompt,
+        imagePromptTitle: getImagePrompt(wizard.imagePrompt).name,
+        brief,
+        assets: wizard.assets,
+        brand: $('#brandInput').value.trim() || state.brand.name,
+        audience: $('#audienceInput').value.trim(),
+        goal: $('#goalInput').value,
+        tone: $('#toneInput').value,
+        cta: $('#ctaInput').value.trim(),
+        keyword: $('#keywordInput').value.trim(),
+        handle: $('#handleInput').value.trim(),
+        adaptations: collectAdaptations(),
+        outputFormats: collectOutputFormats(),
+        prompt: '',
+        createdAt: now,
+        updatedAt: now
+      };
+      project.prompt = await buildProjectPrompt(project);
+      state.projects.push(project);
+      await saveState();
+      closeWizard();
+      renderRecent();
+      openProject(project.id);
+      showToast('Campaign created and saved.');
+    }
+
+    function buildBriefOnly(project) {
+      return `PROJECT: ${project.name}\nPLATFORM: ${PLATFORM_DATA[project.platform].name}\nGENERATOR: ${project.generatorTitle}\nWRITING PROMPT: ${project.writingPromptTitle || getWritingPrompt(project.writingPromptId).name}\nIMAGE PROMPT: ${project.imagePromptTitle || getImagePrompt(project.imagePromptId).name}\nBRAND: ${project.brand}\nHANDLE: ${project.handle || 'Not supplied'}\nAUDIENCE: ${project.audience || 'Not supplied'}\nGOAL: ${project.goal}\nTONE: ${project.tone}\nCTA: ${project.cta || 'Not supplied'}\nKEYWORD: ${project.keyword || 'None'}\nASSETS: ${project.assets.length ? project.assets.map((asset) => asset.name).join(', ') : 'None'}\n\nPLATFORM FORMAT AND CHARACTER RULES\n${getPlatformSpecLines(project.platform, project.generator).join('\n')}\n\nSOURCE MATERIAL\n${project.brief || 'No additional source material supplied.'}`;
+    }
+
+    function openProject(projectId) {
+      activeProject = state.projects.find((project) => project.id === projectId);
+      if (!activeProject) return;
+      $('#workspaceTitle').textContent = activeProject.name;
+      $('#workspaceSubtitle').textContent = `${PLATFORM_DATA[activeProject.platform].name} · ${activeProject.generatorTitle}`;
+      activeEditorView = 'prompt';
+      $('#promptEditor').value = activeProject.prompt;
+      renderProjectDetails();
+      renderAdaptations();
+      renderStudio();
+      $('#pubText').value = activeProject.publishText || activeProject.generatedText || '';
+      renderPublishStudio();
+      $$('.editor-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.editorView === 'prompt'));
+      $('#workspace').classList.remove('hidden');
+    }
+
+    function renderProjectDetails() {
+      const project = activeProject;
+      $('#projectDetails').innerHTML = `
+        <div class="detail-item"><label>Platform</label><div>${escapeHtml(PLATFORM_DATA[project.platform].name)}</div></div>
+        <div class="detail-item"><label>Generator</label><div>${escapeHtml(project.generatorTitle)}</div></div>
+        <div class="detail-item"><label>Writing Prompt</label><div>${escapeHtml(project.writingPromptTitle || getWritingPrompt(project.writingPromptId).name)}</div></div>
+        <div class="detail-item"><label>Image Prompt</label><div>${escapeHtml(project.imagePromptTitle || getImagePrompt(project.imagePromptId).name)}</div></div>
+        <div class="detail-item"><label>Brand</label><div>${escapeHtml(project.brand)}</div></div>
+        <div class="detail-item"><label>Audience</label><div>${escapeHtml(project.audience || 'Not supplied')}</div></div>
+        <div class="detail-item"><label>Goal</label><div>${escapeHtml(project.goal)}</div></div>
+        <div class="detail-item"><label>Tone</label><div>${escapeHtml(project.tone)}</div></div>
+        <div class="detail-item"><label>CTA</label><div>${escapeHtml(project.cta || 'Not supplied')}</div></div>
+        <div class="detail-item"><label>Output Formats</label><div>${escapeHtml((project.outputFormats || ['native']).map((format) => format === 'article-5x2' ? '5:2 article image · 2000 × 800' : format === 'tiktok-cover' ? '9:16 TikTok cover · 1080 × 1920' : project.platform === 'tiktok' ? '9:16 TikTok reel · 1080 × 1920' : 'Platform-native visual').join(' + '))}</div></div>
+        <div class="detail-item"><label>Platform Rules</label><div>${escapeHtml(getPlatformSpecLines(project.platform, project.generator).join(' • '))}</div></div>
+        <div class="detail-item"><label>Source Material</label><div>${escapeHtml(project.brief || 'No additional source material.')}</div></div>
+        ${project.assets.length ? `<div class="detail-item"><label>Reference Images</label><div class="mini-assets">${project.assets.map((asset) => `<img src="${asset.dataUrl}" alt="${escapeHtml(asset.name)}" title="${escapeHtml(asset.name)}" />`).join('')}</div></div>` : ''}
+      `;
+    }
+
+    function buildAdaptationPrompt(targetId) {
+      const source = PLATFORM_DATA[activeProject.platform];
+      const target = PLATFORM_DATA[targetId];
+      const preset = EXPORT_PRESETS[targetId];
+      return `# CONTENT FORGE PLATFORM ADAPTATION\n\nAdapt the approved ${source.name} project below for ${target.name}. This is a rebuild for the destination platform, not a stretched crop. Preserve the core thesis, offer, brand voice, proof, visual identity, and CTA while changing the copy length, pacing, layout, aspect ratio, and content structure for ${target.name}.\n\nTARGET EXPORT PRESET: ${preset.size}, ${preset.ratio}\nADAPTATION RULE: ${preset.note}\nTARGET FORMAT AND CHARACTER RULES:\n${buildPlatformSpecPrompt(targetId)}\n\nPROJECT NAME: ${activeProject.name}\nBRAND: ${activeProject.brand}\nAUDIENCE: ${activeProject.audience}\nGOAL: ${activeProject.goal}\nTONE: ${activeProject.tone}\nWRITING PROMPT: ${activeProject.writingPromptTitle || getWritingPrompt(activeProject.writingPromptId).name}\nIMAGE PROMPT: ${activeProject.imagePromptTitle || getImagePrompt(activeProject.imagePromptId).name}\nCTA: ${activeProject.cta || 'Choose the strongest appropriate CTA'}\nSOURCE ASSETS: ${activeProject.assets.length ? activeProject.assets.map((asset) => asset.name).join(', ') : 'None'}\n\nSOURCE MATERIAL\n${activeProject.brief || activeProject.name}\n\nAPPROVED MASTER PROMPT OR PLAN\n${activeProject.prompt}\n\nREQUIRED OUTPUT\n1. Explain the structural changes required for ${target.name}.\n2. Provide the finished ${target.name} copy.\n3. Provide the new visual dimensions and safe layout instructions.\n4. Rewrite each slide, scene, or content beat as needed instead of shrinking the master.\n5. Provide a destination-specific CTA and publishing caption.\n6. Keep every asset individually exportable.\n\nCreate the ${target.name} version now.`;
+    }
+
+    function renderAdaptations() {
+      const targets = activeProject.adaptations?.length ? activeProject.adaptations : Object.keys(PLATFORM_DATA);
+      const cards = targets.map((id) => {
+        const platform = PLATFORM_DATA[id];
+        const preset = EXPORT_PRESETS[id];
+        const isMaster = id === activeProject.platform;
+        return `
+          <div class="adapt-card">
+            <div class="adapt-top">
+              <div><strong>${platform.icon} ${escapeHtml(platform.name)}</strong><small>${preset.size} · ${preset.ratio}</small></div>
+              ${isMaster ? '<span style="color:var(--green);font-size:11px;font-weight:850">MASTER</span>' : ''}
+            </div>
+            <p>${escapeHtml(preset.note)}</p>
+            ${isMaster ? '<button class="btn small" disabled>Current Project</button>' : `<button class="btn small" data-copy-adapt="${id}">Copy Adaptation Prompt</button>`}
+          </div>`;
+      });
+
+      if ((activeProject.outputFormats || []).includes('article-5x2')) {
+        cards.unshift(`
+          <div class="adapt-card article-cover">
+            <div class="adapt-top">
+              <div><strong>▬ Article Image</strong><small>${EXPORT_PRESETS.article.size} · ${EXPORT_PRESETS.article.ratio}</small></div>
+              <span class="article-badge">Included</span>
+            </div>
+            <p>${escapeHtml(EXPORT_PRESETS.article.note)}</p>
+            <button class="btn small" data-copy-article>Copy 5:2 Image Prompt</button>
+          </div>`);
+      }
+
+      $('#adaptationList').innerHTML = cards.join('');
+      $$('[data-copy-adapt]').forEach((button) => button.addEventListener('click', async () => {
+        await copyText(buildAdaptationPrompt(button.dataset.copyAdapt));
+        showToast(`${PLATFORM_DATA[button.dataset.copyAdapt].name} adaptation prompt copied.`);
+      }));
+      $$('[data-copy-article]').forEach((button) => button.addEventListener('click', async () => {
+        const prompt = `# 5:2 ARTICLE IMAGE
+
+Create a separate premium 2000 × 800 article hero for this project. Do not crop or stretch the platform-native visual. Use one dominant visual idea, minimal text, center-safe composition, and supply a text-free alternate.
+
+PROJECT: ${activeProject.name}
+BRAND: ${activeProject.brand}
+AUDIENCE: ${activeProject.audience}
+GOAL: ${activeProject.goal}
+CTA: ${activeProject.cta || 'None'}
+SOURCE MATERIAL: ${activeProject.brief || activeProject.name}
+REFERENCE ASSETS: ${activeProject.assets.length ? activeProject.assets.map((asset) => asset.name).join(', ') : 'None'}
+
+Return three concepts, rank them, then provide the final image-generation prompt.`;
+        await copyText(prompt);
+        showToast('5:2 article image prompt copied.');
+      }));
+    }
+
+    async function saveActiveProject() {
+      if (!activeProject) return;
+      if (activeEditorView === 'prompt') activeProject.prompt = $('#promptEditor').value;
+      activeProject.generatedText = $('#genTextOutput').innerText.trim();
+      activeProject.publishText = $('#pubText').value;
+      activeProject.updatedAt = Date.now();
+      await saveState();
+      renderRecent();
+      showToast('Campaign saved.');
+    }
+
+    /* ---------- AI Studio (OpenAI generation) ---------- */
+    function renderStudio() {
+      const body = $('#studioBody');
+      if (!canGenerate()) {
+        body.innerHTML = '<div class="studio-note">Live generation is not available in the shared artifact (its sandbox blocks outside API calls). Use the installable web app or the desktop app to generate with your OpenAI key.</div>';
+        return;
+      }
+      $('#studioStatus').textContent = '';
+      $('#studioStatus').classList.remove('error');
+      $('#genTextOutput').innerText = activeProject?.generatedText || '';
+      renderGenImages();
+      if (!settings.openaiKey) setStudioStatus('Add your OpenAI key in Settings (⚙) to generate.');
+    }
+
+    function renderGenImages() {
+      const grid = $('#genImageGrid');
+      const imgs = sessionImages[activeProject?.id] || [];
+      grid.innerHTML = imgs.map((src, i) => `
+        <div class="gen-img">
+          <img src="${src}" alt="Generated image ${i + 1}" />
+          <button class="btn small" data-download-img="${i}">Download</button>
+        </div>`).join('');
+      $$('[data-download-img]').forEach((button) => button.addEventListener('click', () => {
+        const i = Number(button.dataset.downloadImg);
+        const a = document.createElement('a');
+        a.href = imgs[i];
+        a.download = `${slugify(activeProject.name)}-${i + 1}.png`;
+        a.click();
+      }));
+    }
+
+    function setStudioStatus(message, isError = false) {
+      const el = $('#studioStatus');
+      el.innerHTML = message;
+      el.classList.toggle('error', isError);
+    }
+
+    function friendlyOpenAIError(status, message) {
+      if (status === 401) return 'OpenAI rejected the key (401). Check the key in Settings.';
+      if (status === 429) return 'OpenAI is rate-limiting or the account is out of credit (429).';
+      if (status === 400) return 'OpenAI rejected the request (400): ' + (message || 'check the selected model.');
+      if (status === 403) return 'This model is not available to your account (403). Try a different model in Settings.';
+      if (!status) return 'Could not reach OpenAI. Check the connection (this is blocked inside a claude.ai artifact).';
+      return `OpenAI error ${status}: ${message || 'unknown'}`;
+    }
+
+    async function openaiFetch(path, payload) {
+      let res;
+      try {
+        res = await fetch('https://api.openai.com/v1/' + path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + settings.openaiKey },
+          body: JSON.stringify(payload)
+        });
+      } catch (networkError) {
+        throw new Error(friendlyOpenAIError(0));
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(friendlyOpenAIError(res.status, data.error && data.error.message));
+      return data;
+    }
+
+    async function generateText() {
+      if (!activeProject) return;
+      if (!settings.openaiKey) { setStudioStatus('Add your OpenAI key in Settings first.', true); return; }
+      const prompt = $('#promptEditor').value || activeProject.prompt;
+      setStudioStatus('<span class="spinner"></span>Writing copy with ' + escapeHtml(settings.textModel) + '…');
+      $('#genTextBtn').disabled = true;
+      try {
+        const data = await openaiFetch('chat/completions', {
+          model: settings.textModel,
+          messages: [
+            { role: 'system', content: 'You are a senior social media copywriter. Follow the platform and character rules in the brief exactly. Return only the finished, ready-to-post content with clear labels for each part (hook, caption, CTA, hashtags, etc.). No preamble.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.8
+        });
+        const text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+        $('#genTextOutput').innerText = text || '(No text returned.)';
+        activeProject.generatedText = text;
+        if (text && !$('#pubText').value.trim()) {
+          $('#pubText').value = text;
+          activeProject.publishText = text;
+          renderPublishStudio();
+        }
+        await saveState();
+        setStudioStatus('Done. Edit above if needed, then Save Project.');
+      } catch (error) {
+        setStudioStatus(escapeHtml(error.message), true);
+      } finally {
+        $('#genTextBtn').disabled = false;
+      }
+    }
+
+    async function generateImage() {
+      if (!activeProject) return;
+      if (!settings.openaiKey) { setStudioStatus('Add your OpenAI key in Settings first.', true); return; }
+      const imagePrompt = buildImageGenPrompt(activeProject);
+      setStudioStatus('<span class="spinner"></span>Rendering image with ' + escapeHtml(settings.imageModel) + '…');
+      $('#genImageBtn').disabled = true;
+      try {
+        const payload = { model: settings.imageModel, prompt: imagePrompt, size: settings.imageSize, n: 1 };
+        if (settings.imageModel === 'gpt-image-1') payload.response_format = undefined; // gpt-image-1 always returns b64
+        const data = await openaiFetch('images/generations', payload);
+        const item = data.data && data.data[0] ? data.data[0] : {};
+        const src = item.b64_json ? 'data:image/png;base64,' + item.b64_json : item.url;
+        if (!src) throw new Error('OpenAI returned no image.');
+        sessionImages[activeProject.id] = sessionImages[activeProject.id] || [];
+        sessionImages[activeProject.id].unshift(src);
+        renderGenImages();
+        setStudioStatus('Image ready. Download it below (images are not saved with the project).');
+      } catch (error) {
+        setStudioStatus(escapeHtml(error.message), true);
+      } finally {
+        $('#genImageBtn').disabled = false;
+      }
+    }
+
+    function buildImageGenPrompt(project) {
+      const imagePrompt = getImagePrompt(project.imagePromptId);
+      return [
+        `Create a single on-brand image for a ${PLATFORM_DATA[project.platform].name} post.`,
+        `Visual system: ${project.imagePromptTitle || imagePrompt.name}.`,
+        `Topic and message: ${project.brief || project.name}.`,
+        `Brand: ${project.brand}. Goal: ${project.goal}. Tone: ${project.tone}.`,
+        'Design a finished, polished, text-minimal graphic suitable for direct posting. Avoid spelling errors in any on-image text.'
+      ].join(' ');
+    }
+
+    function downloadText(filename, content) {
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    function slugify(value) {
+      return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'content-forge-project';
+    }
+
+    async function exportAppData() {
+      if (window.contentForge?.exportData) {
+        const result = await window.contentForge.exportData(state);
+        if (!result?.canceled) showToast('App data exported.');
+      } else {
+        downloadText('content-forge-export.json', JSON.stringify(state, null, 2));
+      }
+    }
+
+    async function importAppData() {
+      if (!window.contentForge?.importData) return;
+      try {
+        const result = await window.contentForge.importData();
+        if (result?.error) return showToast(result.error);
+        if (result?.data) {
+          state = { ...structuredClone(DEFAULT_STATE), ...result.data };
+          renderAll();
+          showToast('App data imported.');
+        }
+      } catch (error) {
+        showToast('Could not import app data.');
+      }
+    }
+
+    async function openLibraryPrompt(filename) {
+      let text = '';
+      try {
+        text = window.contentForge?.readPrompt ? await window.contentForge.readPrompt(filename) : 'Open the desktop app to load the full bundled prompt.';
+      } catch (error) {
+        text = `Could not load ${filename}.`;
+      }
+      $('#libraryPromptViewer').classList.remove('hidden');
+      $('#libraryPromptTitle').textContent = filename;
+      $('#libraryPromptText').value = text;
+    }
+
+    function renderSettings() {
+      $('#settingsBrand').value = state.brand.name;
+      $('#settingsHandle').value = state.brand.handle;
+      $('#settingsAudience').value = state.brand.audience;
+      $('#settingsRules').value = state.brand.rules;
+      $('#settingsOpenaiKey').value = settings.openaiKey;
+      $('#settingsTextModel').value = settings.textModel;
+      $('#settingsImageModel').value = settings.imageModel;
+      $('#settingsImageSize').value = settings.imageSize;
+      renderAccount();
+    }
+
+    function renderAccount() {
+      const status = $('#accountStatus');
+      const manageBtn = $('#manageSubBtn');
+      if (LICENSING_CONFIGURED) {
+        const lic = lsGetLicense();
+        status.textContent = (lic && lic.key) ? 'Subscription active on this device.' : 'No subscription on this device.';
+        manageBtn.classList.remove('hidden');
+        manageBtn.onclick = () => window.open(LICENSING.portalUrl, '_blank', 'noopener');
+      } else {
+        status.textContent = 'Invite access on this device.';
+        manageBtn.classList.add('hidden');
+      }
+    }
+
+    async function logOut() {
+      const lic = lsGetLicense();
+      // Best effort: free this device's activation slot so the seat can be reused.
+      try {
+        if (LICENSING_CONFIGURED && lic && lic.key && lic.instanceId) {
+          await lsCall('deactivate', { license_key: lic.key, instance_id: lic.instanceId });
+        }
+      } catch (e) { /* offline is fine — still log out locally */ }
+      try { localStorage.removeItem('cfLicense'); localStorage.removeItem('cfUnlocked'); } catch (e) { /* ignore */ }
+      location.reload();
+    }
+
+    function renderAll() {
+      renderMode();
+      renderPlatformTabs();
+      renderGenerators();
+      renderRecent();
+    }
+
+    $('#newProjectBtn').addEventListener('click', () => openWizard());
+    $('#continueCampaignBtn').addEventListener('click', (event) => { const id = event.currentTarget.dataset.projectId; if (id) openProject(id); });
+    $('#startPlatformBtn').addEventListener('click', () => openWizard(state.selectedPlatform));
+    $('#quickCarouselBtn').addEventListener('click', () => openWizard('instagram', 'carousel-forge'));
+    $('#closeWizardBtn').addEventListener('click', closeWizard);
+    $('#wizardBackdrop').addEventListener('click', (event) => { if (event.target.id === 'wizardBackdrop') closeWizard(); });
+    $('#wizardPlatform').addEventListener('change', (event) => {
+      wizard.platform = event.target.value;
+      wizard.generator = PLATFORM_DATA[wizard.platform].generators[0][0];
+      const defaults = getDefaultPromptSelection(wizard.platform, wizard.generator);
+      wizard.writingPrompt = defaults.writing;
+      wizard.imagePrompt = defaults.image;
+      renderWizardGenerators();
+      renderPromptSelectors();
+      renderPlatformSpecBox();
+      renderAdaptChecks();
+      renderOutputFormats();
+    });
+    $('#wizardBackBtn').addEventListener('click', () => {
+      if (wizard.step === 1) closeWizard();
+      else { wizard.step -= 1; updateWizardStep(); }
+    });
+    $('#wizardNextBtn').addEventListener('click', async () => {
+      if (wizard.step === 1 && !wizard.generator) return showToast('Choose a generator.');
+      if (wizard.step === 2 && !$('#briefInput').value.trim() && !wizard.assets.length && !$('#projectNameInput').value.trim()) return showToast('Add a brief, image, or project name.');
+      if (wizard.step < 3) { wizard.step += 1; updateWizardStep(); }
+      else await createProject();
+    });
+    $('#uploadZone').addEventListener('click', () => $('#imageInput').click());
+    $('#imageInput').addEventListener('change', async (event) => { await handleImageFiles(event.target.files); event.target.value = ''; });
+
+    $('#closeWorkspaceBtn').addEventListener('click', () => { $('#workspace').classList.add('hidden'); activeProject = null; });
+    $('#copyPromptBtn').addEventListener('click', async () => { await copyText($('#promptEditor').value); showToast('Prompt copied.'); });
+    $('#downloadPromptBtn').addEventListener('click', () => { if (activeProject) downloadText(`${slugify(activeProject.name)}.txt`, $('#promptEditor').value); });
+    $('#saveProjectBtn').addEventListener('click', saveActiveProject);
+    /* ---------- Publish Studio (SocialBridge — adapt + docked launch for every network) ---------- */
+    const PUBLISH_NETWORKS = {
+      instagram: { name: 'Instagram', icon: '◎', charLimit: 2200, tagLimit: 30, composer: 'https://www.instagram.com/', intent: null },
+      tiktok:    { name: 'TikTok', icon: '♪', charLimit: 2200, tagLimit: Infinity, composer: 'https://www.tiktok.com/upload', intent: null },
+      youtube:   { name: 'YouTube', icon: '▶', charLimit: 5000, tagLimit: Infinity, titleField: 100, composer: 'https://studio.youtube.com/', intent: null },
+      x:         { name: 'X', icon: '𝕏', charLimit: 280, tagLimit: Infinity, composer: 'https://x.com/compose/post', intent: (t) => 'https://x.com/intent/post?text=' + encodeURIComponent(t) },
+      facebook:  { name: 'Facebook', icon: 'f', charLimit: 63206, tagLimit: Infinity, composer: 'https://www.facebook.com/', intent: null },
+      linkedin:  { name: 'LinkedIn', icon: 'in', charLimit: 3000, tagLimit: 5, composer: 'https://www.linkedin.com/feed/?shareActive=true', intent: (t) => 'https://www.linkedin.com/feed/?shareActive=true&text=' + encodeURIComponent(t) },
+      threads:   { name: 'Threads', icon: '@', charLimit: 500, tagLimit: 1, composer: 'https://www.threads.net/', intent: (t) => 'https://www.threads.net/intent/post?text=' + encodeURIComponent(t) },
+      pinterest: { name: 'Pinterest', icon: '◉', charLimit: 500, tagLimit: Infinity, titleField: 100, composer: 'https://www.pinterest.com/pin-creation-tool/', intent: null },
+      reddit:    { name: 'Reddit', icon: '☉', charLimit: 40000, tagLimit: 0, titleField: 300, composer: 'https://www.reddit.com/submit', intent: (t) => 'https://www.reddit.com/submit?title=' + encodeURIComponent(t.split('\n')[0].slice(0, 300)) },
+      bluesky:   { name: 'Bluesky', icon: '⋈', charLimit: 300, tagLimit: Infinity, composer: 'https://bsky.app/', intent: (t) => 'https://bsky.app/intent/compose?text=' + encodeURIComponent(t) },
+      snapchat:  { name: 'Snapchat', icon: '⌐', charLimit: 250, tagLimit: 3, composer: 'https://web.snapchat.com/', intent: null }
+    };
+
+    function splitTrailingTags(text) {
+      const lines = String(text || '').trimEnd().split('\n');
+      const tags = [];
+      while (lines.length) {
+        const line = lines[lines.length - 1].trim();
+        if (!line) { lines.pop(); continue; }
+        const words = line.split(/\s+/);
+        if (words.every((word) => word.startsWith('#'))) { tags.unshift(...words); lines.pop(); }
+        else break;
+      }
+      return { body: lines.join('\n').trimEnd(), tags };
+    }
+
+    function truncateAtWord(text, max) {
+      if (text.length <= max) return text;
+      let cut = text.slice(0, max - 1);
+      const space = cut.lastIndexOf(' ');
+      if (space > max * 0.6) cut = cut.slice(0, space);
+      return cut.trimEnd() + '…';
+    }
+
+    function adaptForNetwork(key, sourceText) {
+      const net = PUBLISH_NETWORKS[key];
+      const { body, tags: allTags } = splitTrailingTags(sourceText);
+      let tags = net.tagLimit === 0 ? [] : allTags.slice(0, net.tagLimit === Infinity ? allTags.length : net.tagLimit);
+      const build = (tagList) => body + (tagList.length ? '\n\n' + tagList.join(' ') : '');
+      let text = build(tags);
+      while (text.length > net.charLimit && tags.length) { tags = tags.slice(0, -1); text = build(tags); }
+      if (text.length > net.charLimit) text = truncateAtWord(text, net.charLimit);
+      const status = text.length > net.charLimit ? 'over' : text.length > net.charLimit * 0.92 ? 'warn' : 'ok';
+      const title = net.titleField ? truncateAtWord(body.split('\n')[0] || '', net.titleField) : null;
+      return { key, text, title, count: text.length, limit: net.charLimit, status, tagsDropped: allTags.length - tags.length };
+    }
+
+    const publishWindows = {};
+    async function publishLaunch(key) {
+      const net = PUBLISH_NETWORKS[key];
+      const source = $('#pubText').value.trim();
+      let url = net.composer;
+      let prefilled = false;
+      if (source) {
+        const adapted = adaptForNetwork(key, source);
+        if (net.intent) { url = net.intent(adapted.text); prefilled = true; }
+        else await copyText(adapted.text);
+      }
+      const sw = window.screen.availWidth;
+      const sh = window.screen.availHeight;
+      const width = Math.min(620, Math.round(sw * 0.42));
+      const height = Math.round(sh * 0.92);
+      const win = window.open(url, 'cf_pub_' + key, `width=${width},height=${height},left=${sw - width - 8},top=8`);
+      if (!win) { showToast('Pop-up blocked — allow pop-ups for Content Forge, then tap again.'); return; }
+      publishWindows[key] = win;
+      try { window.resizeTo(sw - width - 16, sh); window.moveTo(0, 0); } catch (error) { /* not resizable in this context */ }
+      showToast(net.name + (prefilled ? ' opened with your post prefilled.' : source ? ' opened — text copied, just paste.' : ' opened.'));
+    }
+
+    function renderPublishStudio() {
+      const source = $('#pubText').value.trim();
+      $('#pubGrid').innerHTML = Object.keys(PUBLISH_NETWORKS).map((key) => {
+        const net = PUBLISH_NETWORKS[key];
+        const adapted = source ? adaptForNetwork(key, source) : null;
+        const count = adapted
+          ? `<span class="pub-count ${adapted.status}">${adapted.count} / ${net.charLimit}${adapted.tagsDropped > 0 ? ` <small>· ${adapted.tagsDropped} tag${adapted.tagsDropped > 1 ? 's' : ''} trimmed</small>` : ''}</span>`
+          : '<span class="pub-count"><small>Add post text above</small></span>';
+        return `
+          <div class="pub-card">
+            <div class="pub-card-top"><strong>${net.icon} ${net.name}</strong><span class="pub-badge ${net.intent ? 'pre' : ''}">${net.intent ? 'auto-prefill' : 'copy & paste'}</span></div>
+            ${count}
+            <div class="pub-actions">
+              <button class="btn small" data-pub-copy="${key}" ${source ? '' : 'disabled'}>Copy</button>
+              <button class="btn primary small" data-pub-open="${key}">Open</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    $('#pubText').addEventListener('input', () => {
+      if (activeProject) activeProject.publishText = $('#pubText').value;
+      renderPublishStudio();
+    });
+    $('#pubPullBtn').addEventListener('click', () => {
+      const generated = $('#genTextOutput').innerText.trim();
+      if (!generated) { showToast('Nothing generated yet — generate or paste text first.'); return; }
+      $('#pubText').value = generated;
+      if (activeProject) activeProject.publishText = generated;
+      renderPublishStudio();
+      showToast('Pulled your generated text into Launch.');
+    });
+    $('#publishStudio').addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-pub-copy], button[data-pub-open]');
+      if (!button) return;
+      if (button.dataset.pubCopy) {
+        const adapted = adaptForNetwork(button.dataset.pubCopy, $('#pubText').value.trim());
+        await copyText(adapted.text);
+        showToast(PUBLISH_NETWORKS[button.dataset.pubCopy].name + ' version copied.');
+      } else if (button.dataset.pubOpen) {
+        publishLaunch(button.dataset.pubOpen);
+      }
+    });
+
+    $('#aiStudio').addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.id === 'genTextBtn') generateText();
+      else if (button.id === 'genImageBtn') generateImage();
+      else if (button.id === 'copyGenTextBtn') copyText($('#genTextOutput').innerText).then(() => showToast('Generated text copied.'));
+    });
+    $$('.editor-tab').forEach((tab) => tab.addEventListener('click', () => {
+      if (!activeProject) return;
+      $$('.editor-tab').forEach((item) => item.classList.toggle('active', item === tab));
+      if (activeEditorView === 'prompt') activeProject.prompt = $('#promptEditor').value;
+      activeEditorView = tab.dataset.editorView;
+      $('#promptEditor').value = activeEditorView === 'brief' ? buildBriefOnly(activeProject) : activeProject.prompt;
+    }));
+
+    $('#promptLibraryBtn').addEventListener('click', () => $('#libraryBackdrop').classList.remove('hidden'));
+    $('#settingsBtn').addEventListener('click', () => { renderSettings(); $('#settingsBackdrop').classList.remove('hidden'); });
+    $('#logoutBtn').addEventListener('click', () => {
+      const msg = LICENSING_CONFIGURED
+        ? 'Log out and deactivate this device? You can activate again with your license key.'
+        : 'Log out of this device?';
+      if (confirm(msg)) logOut();
+    });
+    $$('[data-close-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.closeModal}`).classList.add('hidden')));
+    $$('[data-open-prompt]').forEach((button) => button.addEventListener('click', () => openLibraryPrompt(button.dataset.openPrompt)));
+    $('#copyLibraryPromptBtn').addEventListener('click', async () => { await copyText($('#libraryPromptText').value); showToast('Library prompt copied.'); });
+    $('#saveSettingsBtn').addEventListener('click', async () => {
+      state.brand = {
+        name: $('#settingsBrand').value.trim() || 'Your Brand',
+        handle: $('#settingsHandle').value.trim(),
+        audience: $('#settingsAudience').value.trim(),
+        rules: $('#settingsRules').value.trim()
+      };
+      settings.openaiKey = $('#settingsOpenaiKey').value.trim();
+      settings.textModel = $('#settingsTextModel').value.trim() || DEFAULT_SETTINGS.textModel;
+      settings.imageModel = $('#settingsImageModel').value;
+      settings.imageSize = $('#settingsImageSize').value;
+      saveSettings();
+      await saveState();
+      $('#settingsBackdrop').classList.add('hidden');
+      showToast('Settings saved.');
+      if (activeProject) renderStudio();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        $('#wizardBackdrop').classList.add('hidden');
+        $('#libraryBackdrop').classList.add('hidden');
+        $('#settingsBackdrop').classList.add('hidden');
+      }
+    });
+
+    if (window.contentForge) {
+      window.contentForge.onMenuNewProject(() => openWizard());
+      window.contentForge.onMenuSave(() => activeProject ? saveActiveProject() : saveState().then(() => showToast('App data saved.')));
+      window.contentForge.onMenuExport(exportAppData);
+      window.contentForge.onMenuImport(importAppData);
+    }
+
+    (async function init() {
+      const runtimePlatform = window.contentForge?.platform || 'browser';
+      document.body.classList.add(`platform-${runtimePlatform}`);
+      if (runtimePlatform === 'darwin') document.querySelector('.window-controls')?.classList.add('hidden');
+      loadSettings();
+      await loadState();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
