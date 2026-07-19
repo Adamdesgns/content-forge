@@ -1938,7 +1938,19 @@
     const DEFAULT_SETTINGS = { openaiKey: '', textModel: 'gpt-4o-mini', imageModel: 'gpt-image-1', imageSize: 'auto' };
     let settings = { ...DEFAULT_SETTINGS };
     function loadSettings() {
-      try { const s = JSON.parse(localStorage.getItem('contentForgeSettings') || 'null'); if (s) settings = { ...DEFAULT_SETTINGS, ...s }; } catch (error) { /* ignore */ }
+      try {
+        const s = JSON.parse(localStorage.getItem('contentForgeSettings') || 'null');
+        if (s) settings = { ...DEFAULT_SETTINGS, ...s };
+        // Devices that saved settings before "Auto" existed have a stale explicit
+        // '1024x1024' baked in, which silently overrides the per-platform sizing in
+        // nearestImageSize(). Migrate that legacy default to Auto exactly once, via a
+        // flag — so a later deliberate re-selection of Square isn't clobbered again.
+        if (s && s.imageSize === '1024x1024' && !localStorage.getItem('cfImageSizeMigrated')) {
+          settings.imageSize = 'auto';
+          saveSettings();
+        }
+        localStorage.setItem('cfImageSizeMigrated', '1');
+      } catch (error) { /* ignore */ }
     }
     function saveSettings() {
       try { localStorage.setItem('contentForgeSettings', JSON.stringify(settings)); } catch (error) { showToast('Could not save AI settings on this device.'); }
