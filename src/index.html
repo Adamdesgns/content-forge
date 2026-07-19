@@ -2142,7 +2142,15 @@
       $('#wizardBackdrop').classList.remove('hidden');
     }
 
-    function closeWizard() {
+    function wizardHasInput() {
+      const val = (id) => (document.getElementById(id)?.value || '').trim();
+      return !!(val('projectNameInput') || val('briefInput') || val('ctaInput') ||
+        val('keywordInput') || (wizard.assets && wizard.assets.length));
+    }
+
+    function closeWizard(force) {
+      if (!force && wizardHasInput() &&
+        !confirm('Discard this campaign? Anything you\'ve entered will be lost.')) return;
       $('#wizardBackdrop').classList.add('hidden');
     }
 
@@ -2607,7 +2615,7 @@ ${buildSelectedPromptLayers(project)}`;
       project.prompt = await buildProjectPrompt(project);
       state.projects.push(project);
       await saveState();
-      closeWizard();
+      closeWizard(true);
       renderRecent();
       openProject(project.id);
       showToast('Campaign created and saved.');
@@ -2951,8 +2959,9 @@ Return three concepts, rank them, then provide the final image-generation prompt
     $('#continueCampaignBtn').addEventListener('click', (event) => { const id = event.currentTarget.dataset.projectId; if (id) openProject(id); });
     $('#startPlatformBtn').addEventListener('click', () => openWizard(state.selectedPlatform));
     $('#quickCarouselBtn').addEventListener('click', () => openWizard('instagram', 'carousel-forge'));
-    $('#closeWizardBtn').addEventListener('click', closeWizard);
-    $('#wizardBackdrop').addEventListener('click', (event) => { if (event.target.id === 'wizardBackdrop') closeWizard(); });
+    $('#closeWizardBtn').addEventListener('click', () => closeWizard());
+    // Intentionally NOT closing the wizard on backdrop (outside) click — it would
+    // discard everything typed. Close only via the ✕ button or Back at step 1.
     $('#wizardPlatform').addEventListener('change', (event) => {
       wizard.platform = event.target.value;
       wizard.generator = PLATFORM_DATA[wizard.platform].generators[0][0];
@@ -3143,7 +3152,8 @@ Return three concepts, rank them, then provide the final image-generation prompt
 
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
-        $('#wizardBackdrop').classList.add('hidden');
+        // Wizard goes through the discard guard so Escape can't wipe entered work.
+        if (!$('#wizardBackdrop').classList.contains('hidden')) { closeWizard(); return; }
         $('#libraryBackdrop').classList.add('hidden');
         $('#settingsBackdrop').classList.add('hidden');
       }
