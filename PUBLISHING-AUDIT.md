@@ -66,5 +66,5 @@ Buffer shipped a **public GraphQL API** (single endpoint, Bearer token, included
 ## E. Suggested immediate next step (safe, no cost)
 Build the **provider-neutral adapter interface + a mock adapter + the Connected Accounts / Review-destination UI shells**, wired to the *existing* composer fallback. This is pure client work, commits Adam to nothing, is fully testable, and makes the real Buffer adapter a drop-in once decisions 1–3 are made. (Handoff §10 Phase 0/1 with a mock adapter.)
 
-## F. Still owed (Phase 0 research, handoff §11)
-The **verified API feasibility matrix** — per network: direct-publish availability, account types, media rules, scopes, app-review, cost, and composer fallback — each row dated with a current official-doc link. This is a live-documentation research task; it should be produced before promising direct publishing on any specific network.
+## F. Feasibility matrix — DELIVERED
+See **`FEASIBILITY-MATRIX.md`** (verified 2026-07-19). Key results: Buffer covers 9 of 11 networks with its own scheduler; Reddit + Snapchat aren't Buffer channels and stay on composer fallback (no gap — Content Forge already has it); Buffer is personal-token-only (no hosted OAuth), which confirms BYO-desktop-first is the only viable Buffer model. Direct integrations are worse on nearly every axis (app review, X per-post cost, Reddit's ~$12k/yr commercial floor, Snapchat has no open API); only Bluesky is trivially open for a future direct adapter.
