@@ -2874,7 +2874,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
 
     // Keep on-image text/UI garbage out of every render. This is what caused the
     // "Caption / Download / AI-generaed" mockup: too much text = misspelled clutter.
-    const IMAGE_GUARD = ' Do not render user-interface mockups, app screenshots, dashboards, captions, buttons, social-media icons, or paragraphs of text. Keep any on-image words to a few, large, and correctly spelled — prefer no text at all. Deliver a polished, professional, photographic-quality marketing graphic.';
+    const IMAGE_GUARD = ' Show the actual subject of the post literally and on-topic; avoid unrelated or abstract metaphors. Do not render user-interface mockups, app screenshots, dashboards, captions, buttons, social-media icons, or paragraphs of text. Keep any on-image words to a few, large, and correctly spelled — prefer no text at all. Deliver a polished, professional, photographic-quality marketing graphic.';
 
     // gpt-image-1 only offers square / portrait / landscape. Pick the nearest to the
     // platform's target ratio instead of one global square. A manual size override wins.
@@ -2901,10 +2901,10 @@ Return three concepts, rank them, then provide the final image-generation prompt
       const data = await openaiFetch('chat/completions', {
         model: settings.textModel,
         messages: [
-          { role: 'system', content: 'You are an art director. Output ONLY a single vivid image-generation prompt (one paragraph) describing subject, setting, composition, lighting, colour palette, and mood for a polished, on-brand marketing graphic. Never describe UI mockups, screenshots, captions, buttons, icons, or blocks of text. No preamble, no labels.' },
-          { role: 'user', content: `Visual system: ${sys.name}. ${sys.instructions}\nBrand: ${project.brand}. Audience: ${project.audience || 'general'}. Goal: ${project.goal}. Tone: ${project.tone}.\nTopic: ${project.brief || project.name}` }
+          { role: 'system', content: 'You are an art director. Output ONLY a single vivid image-generation prompt (one paragraph) describing subject, setting, composition, lighting, colour palette, and mood for a polished, on-brand marketing graphic. FIRST infer what this business actually does from its name, topic, and audience, then depict its real product, service, people, or setting LITERALLY and concretely. Do NOT drift into unrelated or abstract visual metaphors (no stock tickers, gears, lightbulbs, generic cityscapes) unless the topic explicitly asks for a conceptual image. Never describe UI mockups, screenshots, captions, buttons, icons, or blocks of text. No preamble, no labels.' },
+          { role: 'user', content: `Business / brand: ${project.brand}${project.handle ? ' (' + project.handle + ')' : ''}. Audience: ${project.audience || 'general'}. Goal: ${project.goal}. Tone: ${project.tone}.\nVisual system: ${sys.name}. ${sys.instructions}\nWhat the post is about (depict this subject literally): ${project.brief || project.name}` }
         ],
-        temperature: 0.7
+        temperature: 0.6
       });
       return (data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '').trim();
     }
