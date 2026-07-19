@@ -97,11 +97,32 @@ Never paste a GitHub token or password into a chat or commit it to the repo.
 - The access gate is **client-side** (public code) — good for keeping the public out, not unbreakable. Compiled `.exe` + (optionally) private repo hardens it.
 
 ## 9. Open ideas / next steps (not built)
-- Fill in Lemon Squeezy config and go live (see #6).
-- "Manage subscription" link **on the lock screen** (for lapsed users who can't reach Settings).
+- **Buffer auto-posting (SPEC'D, owner-approved — next major feature).** See §9a.
+- Fill in Lemon Squeezy config and go live (see #6). *(Store is wired; testing in progress.)*
 - **Generate-all-platform-adaptations** button in AI Studio.
 - Stronger/rotated password, or move fully to licensed mode.
 - Decide public vs private repo for anti-piracy.
+- Code-signing for the Windows .exe (SignPath free-OSS / Azure Trusted Signing ~$10/mo / Certum ~$70/yr) — owner to pick.
+- Web paywall decision: keep web as free demo vs. licensing proxy.
+- Landing page (marketing copy exists in MARKETING.md).
+
+## 9a. Buffer auto-posting — integration spec (approved model: hybrid)
+**Owner's decision:** hybrid of bring-your-own Buffer + today's composer flow, auto-detected — *"if they don't have Buffer it won't matter."* No forced dependency.
+
+**How it works**
+1. **Settings → new "Auto-posting (Buffer)" section**, styled like the OpenAI section: paste your **Buffer API key** (every Buffer customer gets one free — free plan = 1 key, paid = up to 5). Key stored on-device only, never in exports (same rule as `openaiKey`; extend `DEFAULT_SETTINGS`, NOT exportable state).
+2. On save, validate the key against Buffer's GraphQL API (`https://api.buffer.com`, `Authorization: Bearer <key>`) and fetch the account's **connected channels** (Buffer supports: Instagram, Facebook, LinkedIn, TikTok, X, Threads, Bluesky, Pinterest, YouTube, Google Business, Mastodon — superset overlap with our 11 networks).
+3. **Launch section becomes mode-aware per card:**
+   - Channel matched in the user's Buffer → card shows **"Queue"** (and a "Queue all" master button appears): sends the *already-adapted* per-network text (+ generated image, uploaded as media) as a Buffer draft/queued post using Buffer's create-post mutation with channel-specific metadata (threads on X/Bluesky/Threads, first comment on IG/LinkedIn/FB, Pinterest board, etc.).
+   - No Buffer key, or network not connected in their Buffer → card behaves exactly as today (**Copy + Open composer**). Zero regression.
+4. Per-post results surface on each card (queued ✓ / error with Buffer's message). A "View in Buffer" link opens their Buffer queue.
+
+**Constraints / notes**
+- **Desktop-first** (same as licensing): `api.buffer.com` from the web/PWA may be CORS-blocked — verify before enabling in the web build; gate with `CF_IS_DESKTOP` if needed.
+- **Marketing copy must change when this ships:** MARKETING.md §6 currently (correctly) forbids claiming auto-posting. New claim once live: "Connect your Buffer account and Content Forge queues every adapted post automatically — or keep one-tap composer mode, no Buffer required."
+- **Cost:** $0 to us — the user's Buffer plan covers API usage (per-channel pricing is theirs). Keeps the bring-your-own-key privacy story.
+- **Later evolution:** Buffer also ships an official **MCP server** — relevant only when we build the agent-driven "Idea Engine" (an agent that decides and posts autonomously). The in-app Launch button should call the API directly, not embed an MCP client.
+- Estimated scope: a few focused days (Settings UI + GraphQL client + channel mapping + media upload + per-card states + error handling). Build AFTER the current fix batch is verified.
 
 ## 10. Commit trail (high level, newest last)
 v0.8 base → 4 review bug fixes → real PNG icon → installable PWA → single-file artifact → AI Studio (OpenAI text+image) → Pages + Windows build workflows → **rebrand to Content Forge** (dropped Lucedale/Anvil/macOS wording) → invite password gate → Lemon Squeezy subscription licensing → store-only match → Account (manage subscription + log out).
