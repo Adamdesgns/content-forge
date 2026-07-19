@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Content Forge — Create once. Publish everywhere.</title>
+<meta name="description" content="Turn one idea into a finished, platform-ready post — caption, image, and per-network fit for 11 networks. Coming soon. Built by @AdamDesgns." />
+<meta property="og:title" content="Content Forge — Create once. Publish everywhere." />
+<meta property="og:description" content="One idea in. A finished caption + image out, fit to 11 networks. Coming soon." />
+<meta property="og:type" content="website" />
+<style>
+  :root{
+    --bg:#0a0b0e; --surface:#111318; --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.16);
+    --text:#f5f5f7; --muted:#9a9aa2; --gold:#d1aa62; --gold-2:#e8c98a; --blue:#1d9bf0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:clamp(20px,5vw,64px) 20px;overflow-x:hidden}
+  .glow{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(600px 340px at 50% -8%, rgba(209,170,98,.16), transparent 70%),
+      radial-gradient(700px 420px at 90% 20%, rgba(29,155,240,.10), transparent 70%);}
+  .wrap{position:relative;z-index:1;width:100%;max-width:760px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 13px;border:1px solid var(--line-2);border-radius:999px;
+    font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-2);background:rgba(209,170,98,.07)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--gold-2);box-shadow:0 0 10px var(--gold-2)}
+  .mark{width:74px;height:74px;margin:26px 0 18px;border-radius:20px;display:grid;place-items:center;
+    background:linear-gradient(160deg,#161a20,#0c0e12);border:1px solid var(--line-2);
+    font-weight:900;font-size:26px;letter-spacing:-.04em;color:var(--gold-2);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  h1{font-size:clamp(34px,7vw,60px);line-height:1;letter-spacing:-.05em;font-weight:850}
+  .tag{margin-top:14px;font-size:clamp(16px,3.4vw,21px);color:var(--gold-2);font-weight:650;letter-spacing:-.01em}
+  .lede{margin-top:18px;max-width:560px;color:var(--muted);font-size:clamp(14px,2.6vw,16px);line-height:1.6}
+  .lede strong{color:var(--text);font-weight:700}
+  .pipeline{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:30px 0 4px}
+  .step{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11.5px;font-weight:850;letter-spacing:.14em}
+  .step b{color:var(--text)}
+  .arrow{color:var(--gold);opacity:.7}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;margin-top:34px}
+  .card{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:18px;text-align:left}
+  .card h3{font-size:15px;letter-spacing:-.02em;margin-bottom:6px}
+  .card p{color:var(--muted);font-size:12.5px;line-height:1.5}
+  .card .ic{font-size:19px;margin-bottom:10px;display:block}
+  .cta{margin-top:38px;width:100%;max-width:520px;border:1px solid var(--line-2);border-radius:20px;
+    background:linear-gradient(160deg,rgba(209,170,98,.10),rgba(17,19,24,.6));padding:26px 22px}
+  .cta h2{font-size:20px;letter-spacing:-.03em}
+  .cta p{margin-top:8px;color:var(--muted);font-size:13.5px;line-height:1.55}
+  .keyword{display:inline-block;margin-top:14px;padding:9px 16px;border-radius:12px;border:1px solid var(--gold);
+    color:var(--gold-2);font-weight:850;letter-spacing:.18em;font-size:14px;background:rgba(209,170,98,.08)}
+  .actions{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .chip{font-size:12px;font-weight:800;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:7px 13px}
+  .foot{margin-top:40px;color:var(--muted);font-size:12.5px}
+  .foot a{color:var(--gold-2);text-decoration:none;font-weight:700}
+  .privacy{margin-top:10px;color:var(--muted);font-size:11.5px;opacity:.8}
+  @media(max-width:560px){.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <main class="wrap">
+    <span class="badge"><span class="dot"></span> Coming soon</span>
+    <div class="mark">CF</div>
+    <h1>Content Forge</h1>
+    <p class="tag">Create once. Publish everywhere.</p>
+    <p class="lede">You never start with a blank page. Give it one idea — Content Forge writes the <strong>caption</strong>, generates the <strong>image</strong>, then fits your post to the rules of <strong>11 networks</strong> and gets each one ready to go.</p>
+
+    <div class="pipeline">
+      <span class="step"><b>IDEA</b></span><span class="arrow">→</span>
+      <span class="step"><b>GENERATE</b></span><span class="arrow">→</span>
+      <span class="step"><b>ADAPT</b></span><span class="arrow">→</span>
+      <span class="step"><b>LAUNCH</b></span>
+    </div>
+
+    <section class="cards">
+      <div class="card"><span class="ic">✍️</span><h3>Finished, not just prompted</h3><p>Real captions and images from a single brief — powered by your own OpenAI key, so there's no AI markup.</p></div>
+      <div class="card"><span class="ic">🌐</span><h3>One post, every network</h3><p>Auto-fit to X, Instagram, Threads, Facebook, TikTok, YouTube, LinkedIn, Pinterest, Reddit, Bluesky &amp; Snapchat — right limits, right hashtags.</p></div>
+      <div class="card"><span class="ic">🚀</span><h3>Launch in minutes</h3><p>Each network's composer opens with your post ready — several arrive pre-filled. Direct one-tap publishing is on the way.</p></div>
+      <div class="card"><span class="ic">🔒</span><h3>Private by design</h3><p>Your content and your API key stay on your device. No account with us, nothing on our servers.</p></div>
+    </section>
+
+    <section class="cta">
+      <h2>Be first to forge.</h2>
+      <p>Like. Follow. Share. Comment <b>FORGE</b> to be notified when it's released.</p>
+      <span class="keyword">FORGE</span>
+      <div class="actions">
+        <span class="chip">👍 Like</span>
+        <span class="chip">➕ Follow</span>
+        <span class="chip">🔁 Share</span>
+        <span class="chip">💬 Comment FORGE</span>
+      </div>
+    </section>
+
+    <p class="foot">Built by <a href="https://x.com/AdamDesgns" target="_blank" rel="noopener">@AdamDesgns</a></p>
+    <p class="privacy">Windows desktop app + installable web app. Content and API keys never leave your device.</p>
+  </main>
+</body>
+</html>
