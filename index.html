@@ -381,6 +381,7 @@
       inset: 0;
       z-index: 60;
       overflow-y: auto;
+      overflow-x: hidden;
       background: var(--bg);
     }
 
@@ -402,19 +403,21 @@
     .workspace-actions { margin-left: auto; display: flex; gap: 8px; }
 
     .workspace-grid {
-      min-height: 0;
-      height: calc(100vh - 96px);
+      min-height: calc(100vh - 65px);
       display: grid;
       grid-template-columns: 280px minmax(0,1fr) 330px;
+      align-items: start;
       gap: 12px;
       padding: 12px;
     }
 
-    .workspace-card { min-height: 0; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); overflow: hidden; }
+    .workspace-card { min-width: 0; min-height: 0; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); overflow: hidden; }
     .workspace-card-header { padding: 14px 15px; border-bottom: 1px solid var(--line); }
     .workspace-card-header strong { display: block; }
     .workspace-card-header span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
-    .workspace-scroll { height: calc(100% - 65px); overflow: auto; padding: 14px; }
+    /* Single natural scroll: cards grow with content, only the window scrolls.
+       (No nested overflow — that caused the double scrollbars + clipped columns.) */
+    .workspace-scroll { overflow: visible; padding: 14px; }
 
     .detail-list { display: grid; gap: 12px; }
     .detail-item label { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 4px; }
@@ -422,11 +425,11 @@
     .mini-assets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
     .mini-assets img { width: 100%; aspect-ratio: 1.15; object-fit: cover; border-radius: 9px; border: 1px solid var(--line); }
 
-    .editor-wrap { height: 100%; display: grid; grid-template-rows: auto minmax(0,1fr); }
+    .editor-wrap { display: grid; grid-template-rows: auto 1fr; }
     .editor-tabs { display: flex; gap: 7px; padding: 10px; border-bottom: 1px solid var(--line); }
     .editor-tab { border: 0; border-radius: 9px; padding: 8px 10px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 850; cursor: pointer; }
     .editor-tab.active { color: var(--gold-2); background: rgba(209,170,98,.12); }
-    .prompt-editor { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; padding: 18px; background: #090b0f; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12px; line-height: 1.55; resize: none; }
+    .prompt-editor { width: 100%; height: 60vh; min-height: 340px; border: 0; border-radius: 0; padding: 18px; background: #090b0f; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12px; line-height: 1.55; resize: vertical; }
 
     .adapt-list { display: grid; gap: 9px; }
     .adapt-card { padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.03); }
@@ -746,6 +749,8 @@
     .lock-mode.hidden, .lock-checking.hidden { display: none; }
     .lock-checking { color: var(--muted); font-size: 13px; padding: 8px 0; }
     #trialBtn { text-decoration: none; }
+    .lock-manage { color: var(--muted); font-size: 12px; text-decoration: none; margin-top: 2px; }
+    .lock-manage:hover { color: var(--text); text-decoration: underline; }
     .lock-error { color: #ff6b6b; font-size: 12.5px; min-height: 16px; line-height: 1.45; }
 
     /* AI settings + Studio */
@@ -876,11 +881,9 @@
       .workspace-title { flex: 1 1 60%; min-width: 0; }
       .workspace-actions { width: 100%; display: flex; gap: 8px; }
       .workspace-actions .btn { flex: 1; padding: 0 10px; }
-      .workspace-grid { grid-template-columns: 1fr; gap: 14px; padding: 14px; }
+      .workspace-grid { grid-template-columns: 1fr; gap: 14px; padding: 14px; min-height: 0; }
       .workspace-card { min-height: auto; }
-      .editor-wrap { min-height: 60vh; }
-      .prompt-editor { min-height: 55vh; font-size: 13px; }
-      .workspace-scroll { max-height: 40vh; }
+      .prompt-editor { height: 55vh; font-size: 13px; }
 
       /* AI Studio on phones */
       .ai-studio { margin: 0 14px 14px; }
@@ -909,10 +912,11 @@
       <!-- License mode (used once Lemon Squeezy is configured) -->
       <form class="lock-mode hidden" id="licenseForm" autocomplete="off">
         <p>Enter your license key to unlock. New here? Start a free trial.</p>
-        <input id="licenseKey" type="text" placeholder="License key" spellcheck="false" autocomplete="off" />
+        <input id="licenseKey" type="text" placeholder="Paste your license key" spellcheck="false" autocomplete="off" />
         <button class="btn primary" type="submit" id="activateBtn">Activate</button>
         <a class="btn ghost" id="trialBtn" href="#" target="_blank" rel="noopener">Start 3-day free trial</a>
         <div class="lock-error" id="licenseMsg"></div>
+        <a class="lock-manage" id="lockManageBtn" href="#" target="_blank" rel="noopener">Manage subscription or find your key</a>
       </form>
 
       <!-- Password mode (fallback until licensing is configured) -->
@@ -1314,10 +1318,12 @@
             <div class="field">
               <label>Image size</label>
               <select id="settingsImageSize">
+                <option value="auto">Auto · match platform</option>
                 <option value="1024x1024">1024 × 1024 (square)</option>
                 <option value="1024x1536">1024 × 1536 (portrait)</option>
                 <option value="1536x1024">1536 × 1024 (landscape)</option>
               </select>
+              <span class="hint">Auto picks the closest of the three shapes to each platform's ratio.</span>
             </div>
           </div>
         </div>
@@ -1468,6 +1474,7 @@
 
       // Licensed mode.
       document.getElementById('trialBtn').href = LICENSING.checkoutUrl;
+      document.getElementById('lockManageBtn').href = LICENSING.portalUrl;
       document.getElementById('licenseForm').addEventListener('submit', async (event) => {
         event.preventDefault();
         const key = (document.getElementById('licenseKey').value || '').trim();
@@ -1928,7 +1935,7 @@
 
     /* AI settings live OUTSIDE the exportable state so an exported/shared file
        never carries the API key. Stored on-device only. */
-    const DEFAULT_SETTINGS = { openaiKey: '', textModel: 'gpt-4o-mini', imageModel: 'gpt-image-1', imageSize: '1024x1024' };
+    const DEFAULT_SETTINGS = { openaiKey: '', textModel: 'gpt-4o-mini', imageModel: 'gpt-image-1', imageSize: 'auto' };
     let settings = { ...DEFAULT_SETTINGS };
     function loadSettings() {
       try { const s = JSON.parse(localStorage.getItem('contentForgeSettings') || 'null'); if (s) settings = { ...DEFAULT_SETTINGS, ...s }; } catch (error) { /* ignore */ }
@@ -2825,15 +2832,63 @@ Return three concepts, rank them, then provide the final image-generation prompt
       }
     }
 
+    // Keep on-image text/UI garbage out of every render. This is what caused the
+    // "Caption / Download / AI-generaed" mockup: too much text = misspelled clutter.
+    const IMAGE_GUARD = ' Do not render user-interface mockups, app screenshots, dashboards, captions, buttons, social-media icons, or paragraphs of text. Keep any on-image words to a few, large, and correctly spelled — prefer no text at all. Deliver a polished, professional, photographic-quality marketing graphic.';
+
+    // gpt-image-1 only offers square / portrait / landscape. Pick the nearest to the
+    // platform's target ratio instead of one global square. A manual size override wins.
+    function nearestImageSize(project) {
+      if (settings.imageSize && settings.imageSize !== 'auto') return settings.imageSize;
+      const gen = `${project.generator || ''} ${project.imagePromptId || ''}`;
+      if (/article|5x2|5:2/i.test(gen)) return '1536x1024';        // 5:2 hero → landscape
+      if (['instagram', 'threads', 'tiktok'].includes(project.platform)) return '1024x1536';
+      if (['x', 'youtube'].includes(project.platform)) return '1536x1024';
+      return '1024x1024';
+    }
+
+    // Pull the ready-to-use image prompt the text generator already wrote, if present.
+    function extractFinalImagePrompt(text) {
+      if (!text) return '';
+      const m = text.match(/Final Image[- ]?Generation Prompt\s*[:*]*\s*([\s\S]*?)(?:\n\s*\n|\*\*\s*Text-Free|\*\*\s*[A-Z]|$)/i);
+      return m ? m[1].replace(/[*`]/g, '').trim() : '';
+    }
+
+    // Fallback "art director": turn the brief + chosen visual system into one clean
+    // image prompt (used only when there's no generated text to borrow from).
+    async function deriveImagePrompt(project) {
+      const sys = getImagePrompt(project.imagePromptId);
+      const data = await openaiFetch('chat/completions', {
+        model: settings.textModel,
+        messages: [
+          { role: 'system', content: 'You are an art director. Output ONLY a single vivid image-generation prompt (one paragraph) describing subject, setting, composition, lighting, colour palette, and mood for a polished, on-brand marketing graphic. Never describe UI mockups, screenshots, captions, buttons, icons, or blocks of text. No preamble, no labels.' },
+          { role: 'user', content: `Visual system: ${sys.name}. ${sys.instructions}\nBrand: ${project.brand}. Audience: ${project.audience || 'general'}. Goal: ${project.goal}. Tone: ${project.tone}.\nTopic: ${project.brief || project.name}` }
+        ],
+        temperature: 0.7
+      });
+      return (data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '').trim();
+    }
+
     async function generateImage() {
       if (!activeProject) return;
       if (!settings.openaiKey) { setStudioStatus('Add your OpenAI key in Settings first.', true); return; }
-      const imagePrompt = buildImageGenPrompt(activeProject);
-      setStudioStatus('<span class="spinner"></span>Rendering image with ' + escapeHtml(settings.imageModel) + '…');
       $('#genImageBtn').disabled = true;
       try {
-        const payload = { model: settings.imageModel, prompt: imagePrompt, size: settings.imageSize, n: 1 };
-        if (settings.imageModel === 'gpt-image-1') payload.response_format = undefined; // gpt-image-1 always returns b64
+        // 1) Prefer the image prompt the text step already produced.
+        let imagePrompt = extractFinalImagePrompt(activeProject.generatedText);
+        // 2) Otherwise art-direct one from the brief + visual system.
+        if (!imagePrompt) {
+          setStudioStatus('<span class="spinner"></span>Art-directing the image…');
+          try { imagePrompt = await deriveImagePrompt(activeProject); } catch (e) { imagePrompt = ''; }
+        }
+        // 3) Last resort: the local scaffold.
+        if (!imagePrompt) imagePrompt = buildImageGenPrompt(activeProject);
+        imagePrompt += IMAGE_GUARD;
+
+        const size = nearestImageSize(activeProject);
+        setStudioStatus('<span class="spinner"></span>Rendering ' + size + ' image with ' + escapeHtml(settings.imageModel) + '…');
+        const payload = { model: settings.imageModel, prompt: imagePrompt, size, n: 1 };
+        if (settings.imageModel === 'gpt-image-1') payload.quality = 'high';
         const data = await openaiFetch('images/generations', payload);
         const item = data.data && data.data[0] ? data.data[0] : {};
         const src = item.b64_json ? 'data:image/png;base64,' + item.b64_json : item.url;
@@ -2841,7 +2896,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
         sessionImages[activeProject.id] = sessionImages[activeProject.id] || [];
         sessionImages[activeProject.id].unshift(src);
         renderGenImages();
-        setStudioStatus('Image ready. Download it below (images are not saved with the project).');
+        setStudioStatus('Image ready (' + size + '). Download it below — images are not saved with the project.');
       } catch (error) {
         setStudioStatus(escapeHtml(error.message), true);
       } finally {
@@ -2852,11 +2907,9 @@ Return three concepts, rank them, then provide the final image-generation prompt
     function buildImageGenPrompt(project) {
       const imagePrompt = getImagePrompt(project.imagePromptId);
       return [
-        `Create a single on-brand image for a ${PLATFORM_DATA[project.platform].name} post.`,
-        `Visual system: ${project.imagePromptTitle || imagePrompt.name}.`,
-        `Topic and message: ${project.brief || project.name}.`,
-        `Brand: ${project.brand}. Goal: ${project.goal}. Tone: ${project.tone}.`,
-        'Design a finished, polished, text-minimal graphic suitable for direct posting. Avoid spelling errors in any on-image text.'
+        `Create a single polished, on-brand marketing image for a ${PLATFORM_DATA[project.platform].name} post.`,
+        `Visual system: ${project.imagePromptTitle || imagePrompt.name}. ${imagePrompt.instructions}`,
+        `Concept: ${project.name || 'brand hero graphic'}. Brand: ${project.brand}. Goal: ${project.goal}. Tone: ${project.tone}.`
       ].join(' ');
     }
 
