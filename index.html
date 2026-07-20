@@ -911,12 +911,37 @@
     .conn-state.connected { background: rgba(52,199,89,.16); color: #34c759; }
     .conn-state.connecting { background: rgba(29,155,240,.16); color: #1d9bf0; }
     .conn-state.error, .conn-state.expired { background: rgba(255,107,107,.16); color: #ff6b6b; }
+    .conn-state.composer { background: rgba(255,255,255,.06); color: var(--muted); }
+    .conn-na { font-size: 11px; font-weight: 800; color: var(--muted); padding: 7px 10px; }
+    .buffer-box { border: 1px solid var(--line); border-radius: 13px; background: rgba(29,155,240,.05); padding: 14px; margin-bottom: 12px; }
+    .buffer-row { display: flex; gap: 8px; }
+    .buffer-row input { flex: 1; min-width: 0; min-height: 40px; }
+    .buffer-status { min-height: 15px; margin-top: 9px; font-size: 12px; font-weight: 700; color: var(--muted); }
+    .buffer-status.ok { color: #34c759; }
+    .buffer-status.bad { color: #ff6b6b; }
+    .buffer-help { display: inline-block; margin-top: 8px; color: var(--blue); font-size: 11.5px; text-decoration: none; }
+    .buffer-help:hover { text-decoration: underline; }
     .pub-badge.live { background: rgba(52,199,89,.16); color: #34c759; }
     .pub-result { margin-top: 9px; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
     .pub-result.published { color: #34c759; }
     .pub-result.failed { color: #ff6b6b; }
     .pub-result a { color: inherit; }
     .linkish { border: 0; background: none; padding: 0; color: #1d9bf0; font: inherit; font-size: 11.5px; cursor: pointer; text-decoration: underline; }
+    .pub-result.scheduled { color: var(--gold-2); }
+    /* Launch scheduling bar */
+    .launch-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .seg-btn { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 800; padding: 8px 13px; cursor: pointer; }
+    .seg-btn.active { background: rgba(209,170,98,.14); color: var(--gold-2); }
+    .sched-when { display: inline-flex; align-items: center; gap: 8px; }
+    .sched-when.hidden { display: none; }
+    .sched-when input { min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: #0b0d11; color: var(--text); font: inherit; font-size: 13px; }
+    .sched-tz { color: var(--muted); font-size: 11px; }
+    #pubAllBtn { margin-left: auto; }
+    .launch-status { min-height: 16px; margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .launch-status.ok { color: #34c759; }
+    .launch-status.partial { color: var(--gold-2); }
+    .launch-status.bad { color: #ff6b6b; }
   </style>
 </head>
 <body>
@@ -1221,6 +1246,18 @@
         <button class="btn small" id="pubPullBtn">Use generated text</button>
       </div>
       <textarea class="pub-text" id="pubText" spellcheck="false" placeholder="Paste or pull the finished post text here. Trailing #hashtag lines are detected and trimmed per network."></textarea>
+      <div class="launch-bar">
+        <div class="seg" role="tablist">
+          <button type="button" class="seg-btn active" data-mode="now">Publish now</button>
+          <button type="button" class="seg-btn" data-mode="schedule">Schedule</button>
+        </div>
+        <div class="sched-when hidden" id="schedWhen">
+          <input type="datetime-local" id="pubWhen" />
+          <span class="sched-tz" id="pubTz"></span>
+        </div>
+        <button class="btn primary small" id="pubAllBtn" title="Publish or schedule to every connected network">Publish all connected</button>
+      </div>
+      <div class="launch-status" id="launchStatus"></div>
       <div class="pub-grid" id="pubGrid"></div>
     </section>
   </section>
@@ -1348,7 +1385,15 @@
 
         <div class="settings-section">
           <h3>Connected Accounts</h3>
-          <p class="settings-hint">Connect a network to publish straight from Content Forge. <strong>Demo mode:</strong> these are mock connections for testing the flow — no real account is touched and nothing is posted yet. Real one-tap publishing (via your own Buffer) is coming.</p>
+          <p class="settings-hint">Publish straight from Content Forge by connecting your own <strong>Buffer</strong> account — one token connects up to 9 networks, and Buffer handles posting &amp; scheduling. Your token is stored on this device only and never leaves it. <em>Buffer connect is beta — verify your first post.</em> The per-network <strong>Connect (demo)</strong> buttons below simulate the flow without Buffer.</p>
+          <div class="buffer-box">
+            <div class="buffer-row">
+              <input id="bufferToken" type="password" placeholder="Paste your Buffer API token" autocomplete="off" spellcheck="false" />
+              <button type="button" class="btn primary small" id="bufferConnectBtn">Connect Buffer</button>
+            </div>
+            <div class="buffer-status" id="bufferStatus"></div>
+            <a class="buffer-help" href="https://publish.buffer.com/settings/api" target="_blank" rel="noopener">Where do I find my Buffer token? →</a>
+          </div>
           <div class="conn-list" id="connectedAccounts"></div>
         </div>
 
@@ -1963,7 +2008,7 @@
 
     /* AI settings live OUTSIDE the exportable state so an exported/shared file
        never carries the API key. Stored on-device only. */
-    const DEFAULT_SETTINGS = { openaiKey: '', textModel: 'gpt-4o-mini', imageModel: 'gpt-image-1', imageSize: 'auto' };
+    const DEFAULT_SETTINGS = { openaiKey: '', textModel: 'gpt-4o-mini', imageModel: 'gpt-image-1', imageSize: 'auto', bufferToken: '' };
     let settings = { ...DEFAULT_SETTINGS };
     function loadSettings() {
       try {
@@ -3012,8 +3057,32 @@ Return three concepts, rank them, then provide the final image-generation prompt
       $('#settingsTextModel').value = settings.textModel;
       $('#settingsImageModel').value = settings.imageModel;
       $('#settingsImageSize').value = settings.imageSize;
+      renderBufferStatus();
       renderConnectedAccounts();
       renderAccount();
+    }
+
+    function renderBufferStatus() {
+      const el = $('#bufferStatus');
+      const btn = $('#bufferConnectBtn');
+      const input = $('#bufferToken');
+      if (!el) return;
+      if (bufferConnected()) {
+        const n = (state.connections || []).filter((c) => c.mock === false).length;
+        el.className = 'buffer-status ok';
+        el.textContent = `✓ Buffer connected — ${n} network${n === 1 ? '' : 's'} ready.`;
+        btn.textContent = 'Disconnect Buffer';
+        btn.dataset.mode = 'disconnect';
+        input.value = '••••••••••••';
+        input.disabled = true;
+      } else {
+        el.className = 'buffer-status';
+        el.textContent = '';
+        btn.textContent = 'Connect Buffer';
+        btn.dataset.mode = 'connect';
+        input.disabled = false;
+        if (input.value === '••••••••••••') input.value = '';
+      }
     }
 
     function renderAccount() {
@@ -3120,22 +3189,44 @@ Return three concepts, rank them, then provide the final image-generation prompt
     const pubShortId = () => Math.random().toString(36).slice(2, 8); // mock ids only
     const publishResults = {}; // session-only: { [projectId]: { [network]: PublishResult } }
 
+    /* Per-network publishing capabilities — from FEASIBILITY-MATRIX.md (verified
+       2026-07-19). `buffer` = reachable via Buffer's API; `composerOnly` = no API
+       path, always the composer handoff (Reddit, Snapchat). `note` surfaces caps
+       the user must know about. This is the single source of truth both the mock
+       and the real Buffer adapter read, so the UI reflects reality, not guesses. */
+    const NET_CAPS = {
+      instagram: { buffer: true,  video: true,  carousel: true,  note: 'Carousels up to 10 images via Buffer.' },
+      tiktok:    { buffer: true,  video: true,  carousel: true,  note: 'Long videos finish inside the TikTok app.' },
+      youtube:   { buffer: true,  video: true,  carousel: false, note: 'Shorts only — long-form opens the composer.' },
+      x:         { buffer: true,  video: true,  carousel: true,  note: '' },
+      facebook:  { buffer: true,  video: true,  carousel: true,  note: 'Publishes to Facebook Pages.' },
+      linkedin:  { buffer: true,  video: true,  carousel: true,  note: 'Personal profile or company page.' },
+      threads:   { buffer: true,  video: true,  carousel: true,  note: '' },
+      pinterest: { buffer: true,  video: true,  carousel: false, note: 'Each pin needs a board.' },
+      bluesky:   { buffer: true,  video: true,  carousel: true,  note: 'Images under 1 MB via Buffer.' },
+      reddit:    { buffer: false, composerOnly: true,  video: false, carousel: false, note: 'No API — opens the composer.' },
+      snapchat:  { buffer: false, composerOnly: true,  video: false, carousel: false, note: 'No API — opens the composer.' }
+    };
+    const capsFor = (network) => {
+      const c = NET_CAPS[network] || {};
+      return {
+        text: true,
+        image: true,
+        carousel: !!c.carousel,
+        video: !!c.video,
+        schedule: !c.composerOnly,          // Buffer handles scheduling for its channels
+        directPublish: !!c.buffer,          // has a real (Buffer) publish path
+        composerOnly: !!c.composerOnly,     // Reddit/Snapchat — composer is the only path
+        note: c.note || ''
+      };
+    };
+
     // A PublishingAdapter implements: connect(network)->SocialConnection,
     // disconnect(id), getCapabilities(network), validate(post, connection),
     // publish(post, connection)->PublishResult. Buffer will implement the same.
     const MockAdapter = {
       id: 'mock',
-      getCapabilities(network) {
-        const videoFirst = ['tiktok', 'youtube'].includes(network);
-        return {
-          text: !videoFirst,
-          image: true,
-          carousel: ['instagram', 'facebook', 'x'].includes(network),
-          video: videoFirst,
-          schedule: true,
-          directPublish: !videoFirst // video-first networks fall back to composer in the mock
-        };
-      },
+      getCapabilities(network) { return capsFor(network); },
       async connect(network) {
         await pubWait(650); // simulate an OAuth round-trip. No token is created or stored.
         const handle = (state.brand.handle || 'yourbrand').replace(/^@/, '');
@@ -3160,8 +3251,11 @@ Return three concepts, rank them, then provide the final image-generation prompt
         if (adapted.tagsDropped > 0) warnings.push(adapted.tagsDropped + ' hashtag(s) trimmed for this network.');
         return { ok: blockers.length === 0, warnings, blockers, requiresComposer: blockers.length > 0, adapted };
       },
-      async publish(post, connection) {
+      async publish(post, connection, options = {}) {
         await pubWait(900); // simulate the network call
+        if (options.scheduledAt) {
+          return { network: connection.network, state: 'scheduled', at: Date.now(), scheduledFor: options.scheduledAt, externalUrl: null, error: null, retryable: true };
+        }
         return {
           network: connection.network,
           state: 'published',
@@ -3173,13 +3267,103 @@ Return three concepts, rank them, then provide the final image-generation prompt
       }
     };
 
-    // The registry: every network resolves to the mock today; the real Buffer
-    // adapter will be selected here once BYO-token connect is built.
-    function adapterFor(/* network */) { return MockAdapter; }
+    /* ==========================================================================
+       BUFFER ADAPTER — BETA. Bring-your-own token, desktop-first (matches
+       FEASIBILITY-MATRIX.md: Buffer is personal-token-only, no third-party OAuth).
+       Built from Buffer's public GraphQL beta (https://api.buffer.com) + the
+       matrix, but NOT yet verified against a live Buffer account — the exact
+       GraphQL query/mutation and schedulingType enum are UNCONFIRMED in Buffer's
+       docs. The two ⚠️ functions below are the only spots to adjust once verified
+       with a real token. SECURITY: the token lives in settings.bufferToken
+       (on-device, excluded from exports), NEVER in state.connections (exportable)
+       and is never logged. Connections store only channelId + network. */
+    const BUFFER_API = 'https://api.buffer.com';
+    const BUFFER_SERVICE_MAP = { instagram:'instagram', facebook:'facebook', twitter:'x', x:'x', linkedin:'linkedin', tiktok:'tiktok', youtube:'youtube', pinterest:'pinterest', threads:'threads', bluesky:'bluesky' };
+
+    async function bufferGraphQL(query, variables) {
+      const token = settings.bufferToken;
+      if (!token) throw new Error('No Buffer token set.');
+      const res = await fetch(BUFFER_API, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables })
+      });
+      if (res.status === 401 || res.status === 403) throw new Error('Buffer rejected the token — check it in Buffer → Settings → API.');
+      if (!res.ok) throw new Error('Buffer API returned ' + res.status + '.');
+      const data = await res.json();
+      if (data.errors && data.errors.length) throw new Error(data.errors[0].message || 'Buffer API error.');
+      return data.data;
+    }
+
+    const BufferAdapter = {
+      id: 'buffer',
+      getCapabilities(network) { return capsFor(network); },
+      validate(post, connection) { return MockAdapter.validate(post, connection); },
+      // ⚠️ VERIFY query shape against the live schema (developers.buffer.com/types).
+      async listChannels() {
+        const d = await bufferGraphQL('query { channels { id service name serviceUsername } }', {});
+        return (d && d.channels) || [];
+      },
+      // ⚠️ VERIFY mutation + schedulingType/dueAt enum names against the live schema.
+      async publish(post, connection, options = {}) {
+        const input = {
+          channelIds: [connection.channelId],
+          text: post.text,
+          ...(options.scheduledAt
+            ? { dueAt: new Date(options.scheduledAt).toISOString(), schedulingType: 'custom' }
+            : { schedulingType: 'now' })
+        };
+        const d = await bufferGraphQL('mutation($input: CreatePostInput!){ createPost(input:$input){ id } }', { input });
+        const providerId = d && d.createPost && d.createPost.id;
+        if (options.scheduledAt) return { network: connection.network, state: 'scheduled', at: Date.now(), scheduledFor: options.scheduledAt, externalUrl: null, providerId, retryable: true };
+        return { network: connection.network, state: 'published', at: Date.now(), externalUrl: null, providerId, error: null, retryable: false };
+      }
+    };
+
+    // Connect Buffer: validate token by listing channels, then mark each matching
+    // network connected (tokenless connection records — the token stays in settings).
+    async function connectBuffer(token) {
+      settings.bufferToken = token;
+      saveSettings();
+      let channels;
+      try { channels = await BufferAdapter.listChannels(); }
+      catch (error) { settings.bufferToken = ''; saveSettings(); throw error; }
+      const made = [];
+      for (const ch of channels) {
+        const net = BUFFER_SERVICE_MAP[String(ch.service || '').toLowerCase()];
+        if (!net) continue;
+        state.connections = (state.connections || []).filter((c) => c.network !== net);
+        state.connections.push({
+          id: 'buffer_' + net + '_' + ch.id, network: net, channelId: ch.id,
+          destinationName: (ch.name || ch.serviceUsername || PUBLISH_NETWORKS[net].name) + ' · Buffer',
+          avatar: PUBLISH_NETWORKS[net].icon, state: 'connected', capabilities: capsFor(net),
+          lastCheck: Date.now(), mock: false
+        });
+        made.push(net);
+      }
+      await saveState();
+      return made;
+    }
+
+    async function disconnectBuffer() {
+      settings.bufferToken = '';
+      saveSettings();
+      state.connections = (state.connections || []).filter((c) => c.mock !== false); // drop real Buffer connections
+      await saveState();
+    }
+
+    const bufferConnected = () => !!settings.bufferToken;
+
+    // Registry: a real (non-mock) connection uses the Buffer adapter; else the mock.
+    function adapterFor(network) {
+      const conn = connectionFor(network);
+      return (conn && conn.mock === false) ? BufferAdapter : MockAdapter;
+    }
 
     function connectionFor(network) { return (state.connections || []).find((c) => c.network === network && c.state === 'connected'); }
 
     async function connectNetwork(network) {
+      if (capsFor(network).composerOnly) return; // Reddit/Snapchat: composer only, nothing to connect
       if (connectionFor(network)) return;
       const placeholder = { id: 'pending_' + network, network, state: 'connecting', mock: true };
       state.connections = (state.connections || []).filter((c) => c.network !== network);
@@ -3213,17 +3397,24 @@ Return three concepts, rank them, then provide the final image-generation prompt
       if (!host) return;
       host.innerHTML = Object.keys(PUBLISH_NETWORKS).map((network) => {
         const net = PUBLISH_NETWORKS[network];
+        const caps = capsFor(network);
         const conn = (state.connections || []).find((c) => c.network === network);
-        const st = conn ? conn.state : 'not_connected';
-        const label = { not_connected: 'Not connected', connecting: 'Connecting…', connected: 'Connected', expired: 'Expired', error: 'Error' }[st] || st;
+        const st = caps.composerOnly ? 'composer' : (conn ? conn.state : 'not_connected');
+        const label = { not_connected: 'Not connected', connecting: 'Connecting…', connected: 'Connected', expired: 'Expired', error: 'Error', composer: 'Composer only' }[st] || st;
         const sub = st === 'connected' ? escapeHtml(conn.destinationName)
           : st === 'error' ? 'Could not connect — try again.'
-          : 'Not connected';
-        const action = st === 'connected'
+          : st === 'composer' ? (caps.note || 'Opens the composer to post.')
+          : caps.note || 'Not connected';
+        const viaBuffer = conn && conn.mock === false;
+        const action = caps.composerOnly
+          ? '<span class="conn-na">Composer</span>'
+          : viaBuffer
+          ? '<span class="conn-na">via Buffer</span>'
+          : st === 'connected'
           ? `<button type="button" class="btn ghost small" data-disconnect="${network}">Disconnect</button>`
           : st === 'connecting'
           ? `<button type="button" class="btn small" disabled>Connecting…</button>`
-          : `<button type="button" class="btn small" data-connect="${network}">Connect</button>`;
+          : `<button type="button" class="btn small" data-connect="${network}">Connect (demo)</button>`;
         return `
           <div class="conn-row">
             <div class="conn-ico">${net.icon}</div>
@@ -3311,13 +3502,15 @@ Return three concepts, rank them, then provide the final image-generation prompt
         const resultLine = res
           ? `<div class="pub-result ${res.state}">${
               res.state === 'publishing' ? '<span class="spinner"></span>Publishing…'
+              : res.state === 'scheduled' ? `🕑 Scheduled · ${fmtWhen(res.scheduledFor)}${res.retryable ? ' · <button class="linkish" data-pub-retry="' + key + '">Reschedule</button>' : ''}`
               : res.state === 'published' ? `✓ Published${conn && conn.mock ? ' (demo)' : ''}${res.externalUrl ? ` · <a href="${res.externalUrl}" target="_blank" rel="noopener">view</a>` : ''}`
               : res.state === 'failed' ? `✕ ${escapeHtml(res.error || 'Failed')}${res.retryable ? ' · <button class="linkish" data-pub-retry="' + key + '">Retry</button>' : ''}`
               : ''
             }</div>`
           : '';
+        const verb = launchMode === 'schedule' ? 'Schedule' : 'Publish';
         const primary = canDirect
-          ? `<button class="btn primary small" data-pub-publish="${key}" ${source ? '' : 'disabled'}>Publish</button>`
+          ? `<button class="btn primary small" data-pub-publish="${key}" ${source ? '' : 'disabled'}>${verb}</button>`
           : `<button class="btn primary small" data-pub-open="${key}">Open</button>`;
         return `
           <div class="pub-card">
@@ -3331,6 +3524,48 @@ Return three concepts, rank them, then provide the final image-generation prompt
             ${resultLine}
           </div>`;
       }).join('');
+      renderLaunchStatus();
+    }
+
+    // ---- Scheduling ----
+    let launchMode = 'now'; // 'now' | 'schedule'
+    const userTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return 'local time'; } })();
+    function fmtWhen(ts) {
+      if (!ts) return '';
+      try { return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ' + userTz; }
+      catch (e) { return new Date(ts).toISOString(); }
+    }
+    // Returns the scheduled timestamp (ms) when in schedule mode with a valid future
+    // time, else null (publish immediately). Timezone: the datetime-local value is
+    // interpreted in the user's local zone; we store an absolute epoch + the tz id.
+    function getScheduledAt() {
+      if (launchMode !== 'schedule') return null;
+      const v = $('#pubWhen').value;
+      if (!v) return null;
+      const ts = new Date(v).getTime();
+      return (isFinite(ts) && ts > Date.now()) ? ts : null;
+    }
+
+    // Campaign status roll-up (handoff §6.5): derive one line from per-destination
+    // results — draft / scheduled / partially published / published / failed.
+    function renderLaunchStatus() {
+      const host = $('#launchStatus');
+      if (!host) return;
+      const results = activeProject ? (publishResults[activeProject.id] || {}) : {};
+      const vals = Object.values(results);
+      if (!vals.length) { host.textContent = ''; return; }
+      const n = (s) => vals.filter((r) => r.state === s).length;
+      const published = n('published'), scheduled = n('scheduled'), failed = n('failed'), publishing = n('publishing');
+      const parts = [];
+      if (published) parts.push(`✓ ${published} published`);
+      if (scheduled) parts.push(`🕑 ${scheduled} scheduled`);
+      if (publishing) parts.push(`… ${publishing} in progress`);
+      if (failed) parts.push(`✕ ${failed} failed`);
+      let cls = 'ok';
+      if (failed && (published || scheduled)) cls = 'partial';
+      else if (failed && !published && !scheduled) cls = 'bad';
+      host.className = 'launch-status ' + cls;
+      host.textContent = parts.join('  ·  ');
     }
 
     async function mockPublishTo(key) {
@@ -3346,23 +3581,55 @@ Return three concepts, rank them, then provide the final image-generation prompt
         publishLaunch(key); // composer fallback for anything not directly publishable
         return;
       }
+      const scheduledAt = getScheduledAt();
       publishResults[activeProject.id] = publishResults[activeProject.id] || {};
       publishResults[activeProject.id][key] = { network: key, state: 'publishing', at: Date.now() };
       renderPublishStudio();
       try {
-        const result = await adapterFor(key).publish(post, conn);
+        const result = await adapterFor(key).publish(post, conn, { scheduledAt });
         publishResults[activeProject.id][key] = result;
-        showToast(PUBLISH_NETWORKS[key].name + (conn.mock ? ' published (demo).' : ' published.'));
+        const verbed = result.state === 'scheduled' ? ' scheduled for ' + fmtWhen(result.scheduledFor) : (conn.mock ? ' published (demo).' : ' published.');
+        showToast(PUBLISH_NETWORKS[key].name + verbed);
       } catch (error) {
         publishResults[activeProject.id][key] = { network: key, state: 'failed', at: Date.now(), error: 'Publish failed — try again.', retryable: true };
       }
       renderPublishStudio();
     }
 
+    // Publish (or schedule) to every connected, directly-publishable network at once.
+    async function publishAllConnected() {
+      if (!activeProject) { showToast('Open a campaign first.'); return; }
+      if (!$('#pubText').value.trim()) { showToast('Add post text above first.'); return; }
+      if (launchMode === 'schedule' && !getScheduledAt()) { showToast('Pick a future date and time to schedule.'); return; }
+      const targets = Object.keys(PUBLISH_NETWORKS).filter((k) => connectionFor(k) && capsFor(k).directPublish);
+      if (!targets.length) { showToast('No connected networks yet — connect one in Settings → Connected Accounts.'); return; }
+      for (const key of targets) await mockPublishTo(key); // sequential so the roll-up updates live
+      const composerOnes = Object.keys(PUBLISH_NETWORKS).filter((k) => !connectionFor(k) && !capsFor(k).composerOnly);
+      showToast(`Done: ${targets.length} network${targets.length > 1 ? 's' : ''}${composerOnes.length ? ` · ${composerOnes.length} more can open the composer` : ''}.`);
+    }
+
     $('#pubText').addEventListener('input', () => {
       if (activeProject) activeProject.publishText = $('#pubText').value;
       renderPublishStudio();
     });
+    // Schedule controls: mode toggle + timezone label + a sensible default time.
+    (function initSchedule() {
+      const tz = $('#pubTz'); if (tz) tz.textContent = userTz;
+      const when = $('#pubWhen');
+      if (when) {
+        const d = new Date(Date.now() + 3600000); // default: +1 hour
+        const pad = (n) => String(n).padStart(2, '0');
+        when.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+      document.querySelectorAll('.seg-btn').forEach((b) => b.addEventListener('click', () => {
+        document.querySelectorAll('.seg-btn').forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        launchMode = b.dataset.mode;
+        $('#schedWhen').classList.toggle('hidden', launchMode !== 'schedule');
+        renderPublishStudio();
+      }));
+    })();
+    $('#pubAllBtn').addEventListener('click', publishAllConnected);
     $('#pubPullBtn').addEventListener('click', () => {
       const generated = $('#genTextOutput').innerText.trim();
       if (!generated) { showToast('Nothing generated yet — generate or paste text first.'); return; }
@@ -3415,6 +3682,30 @@ Return three concepts, rank them, then provide the final image-generation prompt
       const d = event.target.closest('[data-disconnect]');
       if (c) connectNetwork(c.dataset.connect);
       else if (d) disconnectNetwork(d.dataset.disconnect);
+    });
+    $('#bufferConnectBtn').addEventListener('click', async (event) => {
+      const btn = event.currentTarget;
+      if (btn.dataset.mode === 'disconnect') {
+        if (!confirm('Disconnect Buffer? Your networks will fall back to the composer.')) return;
+        await disconnectBuffer();
+        renderBufferStatus(); renderConnectedAccounts(); renderPublishStudio();
+        showToast('Buffer disconnected.');
+        return;
+      }
+      const token = ($('#bufferToken').value || '').trim();
+      if (!token) { showToast('Paste your Buffer API token first.'); return; }
+      const status = $('#bufferStatus');
+      btn.disabled = true; status.className = 'buffer-status'; status.innerHTML = '<span class="spinner"></span>Connecting to Buffer…';
+      try {
+        const made = await connectBuffer(token);
+        showToast(made.length ? `Buffer connected — ${made.length} network${made.length === 1 ? '' : 's'} ready.` : 'Buffer connected, but no supported channels were found.');
+      } catch (error) {
+        status.className = 'buffer-status bad';
+        status.textContent = '✕ ' + (error.message || 'Could not connect to Buffer.') + (window.contentForge ? '' : ' (Web build may be blocked by Buffer’s CORS — use the desktop app.)');
+      } finally {
+        btn.disabled = false;
+        renderBufferStatus(); renderConnectedAccounts(); renderPublishStudio();
+      }
     });
     $$('[data-close-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.closeModal}`).classList.add('hidden')));
     $$('[data-open-prompt]').forEach((button) => button.addEventListener('click', () => openLibraryPrompt(button.dataset.openPrompt)));

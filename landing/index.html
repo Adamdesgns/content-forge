@@ -35,6 +35,9 @@
   .step{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11.5px;font-weight:850;letter-spacing:.14em}
   .step b{color:var(--text)}
   .arrow{color:var(--gold);opacity:.7}
+  .netstrip{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:24px}
+  .netstrip span{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:11px;background:var(--surface);font-size:17px;color:var(--text)}
+  .netcaption{margin-top:12px;color:var(--muted);font-size:11.5px;letter-spacing:.01em}
   .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;margin-top:34px}
   .card{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:18px;text-align:left}
   .card h3{font-size:15px;letter-spacing:-.02em;margin-bottom:6px}
@@ -69,6 +72,11 @@
       <span class="step"><b>ADAPT</b></span><span class="arrow">→</span>
       <span class="step"><b>LAUNCH</b></span>
     </div>
+
+    <div class="netstrip" aria-label="Supported networks">
+      <span>𝕏</span><span>◎</span><span>@</span><span>f</span><span>♪</span><span>▶</span><span>in</span><span>◉</span><span>☉</span><span>⋈</span><span>⌐</span>
+    </div>
+    <p class="netcaption">X · Instagram · Threads · Facebook · TikTok · YouTube · LinkedIn · Pinterest · Reddit · Bluesky · Snapchat</p>
 
     <section class="cards">
       <div class="card"><span class="ic">✍️</span><h3>Finished, not just prompted</h3><p>Real captions and images from a single brief — powered by your own OpenAI key, so there's no AI markup.</p></div>
