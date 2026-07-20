@@ -212,3 +212,21 @@ ipcMain.handle('app:read-prompt', async (_event, filename) => {
   }
   return fs.readFile(path.join(__dirname, 'prompts', filename), 'utf8');
 });
+
+// Buffer API calls run in the MAIN process (Node) so they are NOT subject to
+// browser CORS — a renderer fetch to api.buffer.com would be blocked. The token
+// is passed per-call and never persisted here. Returns the raw status + body so
+// the renderer can surface real errors.
+ipcMain.handle('buffer:fetch', async (_event, { token, body }) => {
+  try {
+    const res = await fetch('https://api.buffer.com', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const text = await res.text();
+    return { ok: res.ok, status: res.status, body: text };
+  } catch (error) {
+    return { ok: false, status: 0, body: '', error: String(error && error.message || error) };
+  }
+});
