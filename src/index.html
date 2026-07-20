@@ -3312,9 +3312,9 @@ Return three concepts, rank them, then provide the final image-generation prompt
       id: 'buffer',
       getCapabilities(network) { return capsFor(network); },
       validate(post, connection) { return MockAdapter.validate(post, connection); },
-      // ⚠️ VERIFY query shape against the live schema (developers.buffer.com/types).
+      // Verified against live schema: Channel has id/service/name (no serviceUsername).
       async listChannels() {
-        const d = await bufferGraphQL('query { channels { id service name serviceUsername } }', {});
+        const d = await bufferGraphQL('query { channels { id service name } }', {});
         return (d && d.channels) || [];
       },
       // ⚠️ VERIFY mutation + schedulingType/dueAt enum names against the live schema.
