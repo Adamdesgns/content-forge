@@ -96,11 +96,13 @@ Never paste a GitHub token or password into a chat or commit it to the repo.
 - The dev **sandbox blocks outbound to OpenAI and `github.io`**, and blocks the Electron binary download. So: AI generation and licensing were verified with **mocked APIs + headless Chromium**, not live calls; the **.exe is built by GitHub Actions**, not locally.
 - The access gate is **client-side** (public code) — good for keeping the public out, not unbreakable. Compiled `.exe` + (optionally) private repo hardens it.
 
-## 9. Open ideas / next steps (not built)
-- **Buffer auto-posting (SPEC'D, owner-approved — next major feature).** See §9a.
+## 9. Open ideas / next steps
+**Auto-publishing (IN PROGRESS).** See `PUBLISHING-AUDIT.md`, `FEASIBILITY-MATRIX.md`, `NIGHT-LOG.md`. Built: publishing scaffold + provider-neutral adapter, real per-network capability model (`NET_CAPS`), scheduling (now/schedule + timezone + roll-up), "Publish all connected", and a **BETA Buffer adapter** (bring-your-own token, desktop-first). The Buffer GraphQL calls need live verification with a real token.
+- **Verify the Buffer beta** with Adam's own token (Settings → Connected Accounts) — confirms the flagged GraphQL field names.
+- **Code-signing** for the .exe (SmartScreen) — SignPath (free) / Azure (~$10/mo) / Certum (~$70/yr).
+- **Web paywall** — free demo vs a licensing proxy.
 - Fill in Lemon Squeezy config and go live (see #6). *(Store is wired; testing in progress.)*
-- **Generate-all-platform-adaptations** button in AI Studio.
-- Stronger/rotated password, or move fully to licensed mode.
+- ✅ Shipped since last handoff: manage-subscription on lock screen · image-gen overhaul + per-platform sizing · wizard/paste/layout fixes · coming-soon landing page.
 - Decide public vs private repo for anti-piracy.
 - Code-signing for the Windows .exe (SignPath free-OSS / Azure Trusted Signing ~$10/mo / Certum ~$70/yr) — owner to pick.
 - Web paywall decision: keep web as free demo vs. licensing proxy.
