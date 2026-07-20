@@ -911,12 +911,29 @@
     .conn-state.connected { background: rgba(52,199,89,.16); color: #34c759; }
     .conn-state.connecting { background: rgba(29,155,240,.16); color: #1d9bf0; }
     .conn-state.error, .conn-state.expired { background: rgba(255,107,107,.16); color: #ff6b6b; }
+    .conn-state.composer { background: rgba(255,255,255,.06); color: var(--muted); }
+    .conn-na { font-size: 11px; font-weight: 800; color: var(--muted); padding: 7px 10px; }
     .pub-badge.live { background: rgba(52,199,89,.16); color: #34c759; }
     .pub-result { margin-top: 9px; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
     .pub-result.published { color: #34c759; }
     .pub-result.failed { color: #ff6b6b; }
     .pub-result a { color: inherit; }
     .linkish { border: 0; background: none; padding: 0; color: #1d9bf0; font: inherit; font-size: 11.5px; cursor: pointer; text-decoration: underline; }
+    .pub-result.scheduled { color: var(--gold-2); }
+    /* Launch scheduling bar */
+    .launch-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .seg-btn { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 800; padding: 8px 13px; cursor: pointer; }
+    .seg-btn.active { background: rgba(209,170,98,.14); color: var(--gold-2); }
+    .sched-when { display: inline-flex; align-items: center; gap: 8px; }
+    .sched-when.hidden { display: none; }
+    .sched-when input { min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: #0b0d11; color: var(--text); font: inherit; font-size: 13px; }
+    .sched-tz { color: var(--muted); font-size: 11px; }
+    #pubAllBtn { margin-left: auto; }
+    .launch-status { min-height: 16px; margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .launch-status.ok { color: #34c759; }
+    .launch-status.partial { color: var(--gold-2); }
+    .launch-status.bad { color: #ff6b6b; }
   </style>
 </head>
 <body>
@@ -1221,6 +1238,18 @@
         <button class="btn small" id="pubPullBtn">Use generated text</button>
       </div>
       <textarea class="pub-text" id="pubText" spellcheck="false" placeholder="Paste or pull the finished post text here. Trailing #hashtag lines are detected and trimmed per network."></textarea>
+      <div class="launch-bar">
+        <div class="seg" role="tablist">
+          <button type="button" class="seg-btn active" data-mode="now">Publish now</button>
+          <button type="button" class="seg-btn" data-mode="schedule">Schedule</button>
+        </div>
+        <div class="sched-when hidden" id="schedWhen">
+          <input type="datetime-local" id="pubWhen" />
+          <span class="sched-tz" id="pubTz"></span>
+        </div>
+        <button class="btn primary small" id="pubAllBtn" title="Publish or schedule to every connected network">Publish all connected</button>
+      </div>
+      <div class="launch-status" id="launchStatus"></div>
       <div class="pub-grid" id="pubGrid"></div>
     </section>
   </section>
@@ -3120,22 +3149,44 @@ Return three concepts, rank them, then provide the final image-generation prompt
     const pubShortId = () => Math.random().toString(36).slice(2, 8); // mock ids only
     const publishResults = {}; // session-only: { [projectId]: { [network]: PublishResult } }
 
+    /* Per-network publishing capabilities — from FEASIBILITY-MATRIX.md (verified
+       2026-07-19). `buffer` = reachable via Buffer's API; `composerOnly` = no API
+       path, always the composer handoff (Reddit, Snapchat). `note` surfaces caps
+       the user must know about. This is the single source of truth both the mock
+       and the real Buffer adapter read, so the UI reflects reality, not guesses. */
+    const NET_CAPS = {
+      instagram: { buffer: true,  video: true,  carousel: true,  note: 'Carousels up to 10 images via Buffer.' },
+      tiktok:    { buffer: true,  video: true,  carousel: true,  note: 'Long videos finish inside the TikTok app.' },
+      youtube:   { buffer: true,  video: true,  carousel: false, note: 'Shorts only — long-form opens the composer.' },
+      x:         { buffer: true,  video: true,  carousel: true,  note: '' },
+      facebook:  { buffer: true,  video: true,  carousel: true,  note: 'Publishes to Facebook Pages.' },
+      linkedin:  { buffer: true,  video: true,  carousel: true,  note: 'Personal profile or company page.' },
+      threads:   { buffer: true,  video: true,  carousel: true,  note: '' },
+      pinterest: { buffer: true,  video: true,  carousel: false, note: 'Each pin needs a board.' },
+      bluesky:   { buffer: true,  video: true,  carousel: true,  note: 'Images under 1 MB via Buffer.' },
+      reddit:    { buffer: false, composerOnly: true,  video: false, carousel: false, note: 'No API — opens the composer.' },
+      snapchat:  { buffer: false, composerOnly: true,  video: false, carousel: false, note: 'No API — opens the composer.' }
+    };
+    const capsFor = (network) => {
+      const c = NET_CAPS[network] || {};
+      return {
+        text: true,
+        image: true,
+        carousel: !!c.carousel,
+        video: !!c.video,
+        schedule: !c.composerOnly,          // Buffer handles scheduling for its channels
+        directPublish: !!c.buffer,          // has a real (Buffer) publish path
+        composerOnly: !!c.composerOnly,     // Reddit/Snapchat — composer is the only path
+        note: c.note || ''
+      };
+    };
+
     // A PublishingAdapter implements: connect(network)->SocialConnection,
     // disconnect(id), getCapabilities(network), validate(post, connection),
     // publish(post, connection)->PublishResult. Buffer will implement the same.
     const MockAdapter = {
       id: 'mock',
-      getCapabilities(network) {
-        const videoFirst = ['tiktok', 'youtube'].includes(network);
-        return {
-          text: !videoFirst,
-          image: true,
-          carousel: ['instagram', 'facebook', 'x'].includes(network),
-          video: videoFirst,
-          schedule: true,
-          directPublish: !videoFirst // video-first networks fall back to composer in the mock
-        };
-      },
+      getCapabilities(network) { return capsFor(network); },
       async connect(network) {
         await pubWait(650); // simulate an OAuth round-trip. No token is created or stored.
         const handle = (state.brand.handle || 'yourbrand').replace(/^@/, '');
@@ -3160,8 +3211,11 @@ Return three concepts, rank them, then provide the final image-generation prompt
         if (adapted.tagsDropped > 0) warnings.push(adapted.tagsDropped + ' hashtag(s) trimmed for this network.');
         return { ok: blockers.length === 0, warnings, blockers, requiresComposer: blockers.length > 0, adapted };
       },
-      async publish(post, connection) {
+      async publish(post, connection, options = {}) {
         await pubWait(900); // simulate the network call
+        if (options.scheduledAt) {
+          return { network: connection.network, state: 'scheduled', at: Date.now(), scheduledFor: options.scheduledAt, externalUrl: null, error: null, retryable: true };
+        }
         return {
           network: connection.network,
           state: 'published',
@@ -3180,6 +3234,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
     function connectionFor(network) { return (state.connections || []).find((c) => c.network === network && c.state === 'connected'); }
 
     async function connectNetwork(network) {
+      if (capsFor(network).composerOnly) return; // Reddit/Snapchat: composer only, nothing to connect
       if (connectionFor(network)) return;
       const placeholder = { id: 'pending_' + network, network, state: 'connecting', mock: true };
       state.connections = (state.connections || []).filter((c) => c.network !== network);
@@ -3213,13 +3268,17 @@ Return three concepts, rank them, then provide the final image-generation prompt
       if (!host) return;
       host.innerHTML = Object.keys(PUBLISH_NETWORKS).map((network) => {
         const net = PUBLISH_NETWORKS[network];
+        const caps = capsFor(network);
         const conn = (state.connections || []).find((c) => c.network === network);
-        const st = conn ? conn.state : 'not_connected';
-        const label = { not_connected: 'Not connected', connecting: 'Connecting…', connected: 'Connected', expired: 'Expired', error: 'Error' }[st] || st;
+        const st = caps.composerOnly ? 'composer' : (conn ? conn.state : 'not_connected');
+        const label = { not_connected: 'Not connected', connecting: 'Connecting…', connected: 'Connected', expired: 'Expired', error: 'Error', composer: 'Composer only' }[st] || st;
         const sub = st === 'connected' ? escapeHtml(conn.destinationName)
           : st === 'error' ? 'Could not connect — try again.'
-          : 'Not connected';
-        const action = st === 'connected'
+          : st === 'composer' ? (caps.note || 'Opens the composer to post.')
+          : caps.note || 'Not connected';
+        const action = caps.composerOnly
+          ? '<span class="conn-na">Composer</span>'
+          : st === 'connected'
           ? `<button type="button" class="btn ghost small" data-disconnect="${network}">Disconnect</button>`
           : st === 'connecting'
           ? `<button type="button" class="btn small" disabled>Connecting…</button>`
@@ -3311,13 +3370,15 @@ Return three concepts, rank them, then provide the final image-generation prompt
         const resultLine = res
           ? `<div class="pub-result ${res.state}">${
               res.state === 'publishing' ? '<span class="spinner"></span>Publishing…'
+              : res.state === 'scheduled' ? `🕑 Scheduled · ${fmtWhen(res.scheduledFor)}${res.retryable ? ' · <button class="linkish" data-pub-retry="' + key + '">Reschedule</button>' : ''}`
               : res.state === 'published' ? `✓ Published${conn && conn.mock ? ' (demo)' : ''}${res.externalUrl ? ` · <a href="${res.externalUrl}" target="_blank" rel="noopener">view</a>` : ''}`
               : res.state === 'failed' ? `✕ ${escapeHtml(res.error || 'Failed')}${res.retryable ? ' · <button class="linkish" data-pub-retry="' + key + '">Retry</button>' : ''}`
               : ''
             }</div>`
           : '';
+        const verb = launchMode === 'schedule' ? 'Schedule' : 'Publish';
         const primary = canDirect
-          ? `<button class="btn primary small" data-pub-publish="${key}" ${source ? '' : 'disabled'}>Publish</button>`
+          ? `<button class="btn primary small" data-pub-publish="${key}" ${source ? '' : 'disabled'}>${verb}</button>`
           : `<button class="btn primary small" data-pub-open="${key}">Open</button>`;
         return `
           <div class="pub-card">
@@ -3331,6 +3392,48 @@ Return three concepts, rank them, then provide the final image-generation prompt
             ${resultLine}
           </div>`;
       }).join('');
+      renderLaunchStatus();
+    }
+
+    // ---- Scheduling ----
+    let launchMode = 'now'; // 'now' | 'schedule'
+    const userTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return 'local time'; } })();
+    function fmtWhen(ts) {
+      if (!ts) return '';
+      try { return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ' + userTz; }
+      catch (e) { return new Date(ts).toISOString(); }
+    }
+    // Returns the scheduled timestamp (ms) when in schedule mode with a valid future
+    // time, else null (publish immediately). Timezone: the datetime-local value is
+    // interpreted in the user's local zone; we store an absolute epoch + the tz id.
+    function getScheduledAt() {
+      if (launchMode !== 'schedule') return null;
+      const v = $('#pubWhen').value;
+      if (!v) return null;
+      const ts = new Date(v).getTime();
+      return (isFinite(ts) && ts > Date.now()) ? ts : null;
+    }
+
+    // Campaign status roll-up (handoff §6.5): derive one line from per-destination
+    // results — draft / scheduled / partially published / published / failed.
+    function renderLaunchStatus() {
+      const host = $('#launchStatus');
+      if (!host) return;
+      const results = activeProject ? (publishResults[activeProject.id] || {}) : {};
+      const vals = Object.values(results);
+      if (!vals.length) { host.textContent = ''; return; }
+      const n = (s) => vals.filter((r) => r.state === s).length;
+      const published = n('published'), scheduled = n('scheduled'), failed = n('failed'), publishing = n('publishing');
+      const parts = [];
+      if (published) parts.push(`✓ ${published} published`);
+      if (scheduled) parts.push(`🕑 ${scheduled} scheduled`);
+      if (publishing) parts.push(`… ${publishing} in progress`);
+      if (failed) parts.push(`✕ ${failed} failed`);
+      let cls = 'ok';
+      if (failed && (published || scheduled)) cls = 'partial';
+      else if (failed && !published && !scheduled) cls = 'bad';
+      host.className = 'launch-status ' + cls;
+      host.textContent = parts.join('  ·  ');
     }
 
     async function mockPublishTo(key) {
@@ -3346,23 +3449,55 @@ Return three concepts, rank them, then provide the final image-generation prompt
         publishLaunch(key); // composer fallback for anything not directly publishable
         return;
       }
+      const scheduledAt = getScheduledAt();
       publishResults[activeProject.id] = publishResults[activeProject.id] || {};
       publishResults[activeProject.id][key] = { network: key, state: 'publishing', at: Date.now() };
       renderPublishStudio();
       try {
-        const result = await adapterFor(key).publish(post, conn);
+        const result = await adapterFor(key).publish(post, conn, { scheduledAt });
         publishResults[activeProject.id][key] = result;
-        showToast(PUBLISH_NETWORKS[key].name + (conn.mock ? ' published (demo).' : ' published.'));
+        const verbed = result.state === 'scheduled' ? ' scheduled for ' + fmtWhen(result.scheduledFor) : (conn.mock ? ' published (demo).' : ' published.');
+        showToast(PUBLISH_NETWORKS[key].name + verbed);
       } catch (error) {
         publishResults[activeProject.id][key] = { network: key, state: 'failed', at: Date.now(), error: 'Publish failed — try again.', retryable: true };
       }
       renderPublishStudio();
     }
 
+    // Publish (or schedule) to every connected, directly-publishable network at once.
+    async function publishAllConnected() {
+      if (!activeProject) { showToast('Open a campaign first.'); return; }
+      if (!$('#pubText').value.trim()) { showToast('Add post text above first.'); return; }
+      if (launchMode === 'schedule' && !getScheduledAt()) { showToast('Pick a future date and time to schedule.'); return; }
+      const targets = Object.keys(PUBLISH_NETWORKS).filter((k) => connectionFor(k) && capsFor(k).directPublish);
+      if (!targets.length) { showToast('No connected networks yet — connect one in Settings → Connected Accounts.'); return; }
+      for (const key of targets) await mockPublishTo(key); // sequential so the roll-up updates live
+      const composerOnes = Object.keys(PUBLISH_NETWORKS).filter((k) => !connectionFor(k) && !capsFor(k).composerOnly);
+      showToast(`Done: ${targets.length} network${targets.length > 1 ? 's' : ''}${composerOnes.length ? ` · ${composerOnes.length} more can open the composer` : ''}.`);
+    }
+
     $('#pubText').addEventListener('input', () => {
       if (activeProject) activeProject.publishText = $('#pubText').value;
       renderPublishStudio();
     });
+    // Schedule controls: mode toggle + timezone label + a sensible default time.
+    (function initSchedule() {
+      const tz = $('#pubTz'); if (tz) tz.textContent = userTz;
+      const when = $('#pubWhen');
+      if (when) {
+        const d = new Date(Date.now() + 3600000); // default: +1 hour
+        const pad = (n) => String(n).padStart(2, '0');
+        when.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+      document.querySelectorAll('.seg-btn').forEach((b) => b.addEventListener('click', () => {
+        document.querySelectorAll('.seg-btn').forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        launchMode = b.dataset.mode;
+        $('#schedWhen').classList.toggle('hidden', launchMode !== 'schedule');
+        renderPublishStudio();
+      }));
+    })();
+    $('#pubAllBtn').addEventListener('click', publishAllConnected);
     $('#pubPullBtn').addEventListener('click', () => {
       const generated = $('#genTextOutput').innerText.trim();
       if (!generated) { showToast('Nothing generated yet — generate or paste text first.'); return; }
