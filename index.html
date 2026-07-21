@@ -3315,7 +3315,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
     const BUFFER_SERVICE_MAP = { instagram:'instagram', facebook:'facebook', twitter:'x', x:'x', linkedin:'linkedin', tiktok:'tiktok', youtube:'youtube', pinterest:'pinterest', threads:'threads', bluesky:'bluesky' };
 
     async function bufferGraphQL(query, variables) {
-      const token = settings.bufferToken;
+      const token = (settings.bufferToken || '').replace(/[^\x21-\x7E]/g, '');
       if (!token) throw new Error('No Buffer token set.');
       const payload = { query, variables };
       let status, text;
@@ -3783,8 +3783,12 @@ Return three concepts, rank them, then provide the final image-generation prompt
         showToast('Buffer disconnected.');
         return;
       }
-      const token = ($('#bufferToken').value || '').trim();
+      const rawToken = ($('#bufferToken').value || '').trim();
+      // Strip smart quotes, spaces, and any non-printable-ASCII (paste autocorrect
+      // can inject e.g. U+2019 ' — which is illegal in an HTTP header and kills every call).
+      const token = rawToken.replace(/[^\x21-\x7E]/g, '');
       if (!token) { showToast('Paste your Buffer API token first.'); return; }
+      if (token !== rawToken) showToast('Cleaned up some stray characters in your token.');
       const status = $('#bufferStatus');
       const schemaEl = $('#bufferSchema');
       btn.disabled = true; status.className = 'buffer-status'; status.innerHTML = '<span class="spinner"></span>Connecting to Buffer…';
