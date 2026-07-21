@@ -944,6 +944,15 @@
     .launch-status.ok { color: #34c759; }
     .launch-status.partial { color: var(--gold-2); }
     .launch-status.bad { color: #ff6b6b; }
+    .pub-card { position: relative; }
+    .pub-hide { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border: 0; border-radius: 7px; background: rgba(255,255,255,.06); color: var(--muted); font-size: 15px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity .15s; }
+    .pub-card:hover .pub-hide { opacity: 1; }
+    .pub-hide:hover { background: rgba(255,107,107,.18); color: #ff6b6b; }
+    .net-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+    .net-chip { border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 800; cursor: pointer; background: rgba(255,255,255,.03); color: var(--muted); }
+    .net-chip.on { border-color: rgba(52,199,89,.4); color: #34c759; background: rgba(52,199,89,.08); }
+    .net-chip.off { opacity: .6; }
+    @media (hover: none) { .pub-hide { opacity: 1; } }
   </style>
 </head>
 <body>
@@ -1398,6 +1407,12 @@
             <a class="buffer-help" href="https://publish.buffer.com/settings/api" target="_blank" rel="noopener">Where do I find my Buffer token? →</a>
           </div>
           <div class="conn-list" id="connectedAccounts"></div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Networks</h3>
+          <p class="settings-hint">Show only the networks you actually use. Hidden ones disappear from the Launch grid and Connected Accounts. Tap to toggle.</p>
+          <div class="net-toggles" id="networkToggles"></div>
         </div>
 
         <div class="settings-section">
@@ -2002,7 +2017,10 @@
       // Publishing scaffold: normalized SocialConnection records. MOCK ONLY today —
       // NEVER store real access/refresh tokens here (handoff §8). Real tokens live
       // with the provider (Buffer) or a future backend, never in this client state.
-      connections: []
+      connections: [],
+      // Networks the user has hidden from the Launch grid + Connected Accounts to
+      // reduce clutter. Array of network keys.
+      hiddenNetworks: []
     };
 
     let state = structuredClone(DEFAULT_STATE);
@@ -3062,6 +3080,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
       $('#settingsImageSize').value = settings.imageSize;
       renderBufferStatus();
       renderConnectedAccounts();
+      renderNetworkToggles();
       renderAccount();
     }
 
@@ -3223,6 +3242,18 @@ Return three concepts, rank them, then provide the final image-generation prompt
         note: c.note || ''
       };
     };
+
+    // Hide/show networks so users can declutter the Launch grid + Connected Accounts.
+    const isHidden = (n) => (state.hiddenNetworks || []).includes(n);
+    const visibleNetworks = () => Object.keys(PUBLISH_NETWORKS).filter((n) => !isHidden(n));
+    async function setNetworkHidden(network, hidden) {
+      state.hiddenNetworks = (state.hiddenNetworks || []).filter((n) => n !== network);
+      if (hidden) state.hiddenNetworks.push(network);
+      await saveState();
+      renderPublishStudio();
+      renderConnectedAccounts();
+      renderNetworkToggles();
+    }
 
     // A PublishingAdapter implements: connect(network)->SocialConnection,
     // disconnect(id), getCapabilities(network), validate(post, connection),
@@ -3438,7 +3469,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
     function renderConnectedAccounts() {
       const host = document.getElementById('connectedAccounts');
       if (!host) return;
-      host.innerHTML = Object.keys(PUBLISH_NETWORKS).map((network) => {
+      host.innerHTML = visibleNetworks().map((network) => {
         const net = PUBLISH_NETWORKS[network];
         const caps = capsFor(network);
         const conn = (state.connections || []).find((c) => c.network === network);
@@ -3467,6 +3498,16 @@ Return three concepts, rank them, then provide the final image-generation prompt
             </div>
             ${action}
           </div>`;
+      }).join('');
+    }
+
+    function renderNetworkToggles() {
+      const host = document.getElementById('networkToggles');
+      if (!host) return;
+      host.innerHTML = Object.keys(PUBLISH_NETWORKS).map((network) => {
+        const net = PUBLISH_NETWORKS[network];
+        const shown = !isHidden(network);
+        return `<button type="button" class="net-chip ${shown ? 'on' : 'off'}" data-net-toggle="${network}">${net.icon} ${net.name} ${shown ? '✓' : '＋'}</button>`;
       }).join('');
     }
 
@@ -3529,7 +3570,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
     function renderPublishStudio() {
       const source = $('#pubText').value.trim();
       const results = activeProject ? (publishResults[activeProject.id] || {}) : {};
-      $('#pubGrid').innerHTML = Object.keys(PUBLISH_NETWORKS).map((key) => {
+      $('#pubGrid').innerHTML = visibleNetworks().map((key) => {
         const net = PUBLISH_NETWORKS[key];
         const adapted = source ? adaptForNetwork(key, source) : null;
         const conn = connectionFor(key);
@@ -3557,6 +3598,7 @@ Return three concepts, rank them, then provide the final image-generation prompt
           : `<button class="btn primary small" data-pub-open="${key}">Open</button>`;
         return `
           <div class="pub-card">
+            <button class="pub-hide" data-pub-hide="${key}" title="Hide ${escapeHtml(net.name)} — you can bring it back in Settings">×</button>
             <div class="pub-card-top"><strong>${net.icon} ${net.name}</strong>${badge}</div>
             ${count}
             <div class="pub-actions">
@@ -3644,10 +3686,10 @@ Return three concepts, rank them, then provide the final image-generation prompt
       if (!activeProject) { showToast('Open a campaign first.'); return; }
       if (!$('#pubText').value.trim()) { showToast('Add post text above first.'); return; }
       if (launchMode === 'schedule' && !getScheduledAt()) { showToast('Pick a future date and time to schedule.'); return; }
-      const targets = Object.keys(PUBLISH_NETWORKS).filter((k) => connectionFor(k) && capsFor(k).directPublish);
+      const targets = visibleNetworks().filter((k) => connectionFor(k) && capsFor(k).directPublish);
       if (!targets.length) { showToast('No connected networks yet — connect one in Settings → Connected Accounts.'); return; }
       for (const key of targets) await mockPublishTo(key); // sequential so the roll-up updates live
-      const composerOnes = Object.keys(PUBLISH_NETWORKS).filter((k) => !connectionFor(k) && !capsFor(k).composerOnly);
+      const composerOnes = visibleNetworks().filter((k) => !connectionFor(k) && !capsFor(k).composerOnly);
       showToast(`Done: ${targets.length} network${targets.length > 1 ? 's' : ''}${composerOnes.length ? ` · ${composerOnes.length} more can open the composer` : ''}.`);
     }
 
@@ -3682,6 +3724,8 @@ Return three concepts, rank them, then provide the final image-generation prompt
       showToast('Pulled your generated text into Launch.');
     });
     $('#publishStudio').addEventListener('click', async (event) => {
+      const hideBtn = event.target.closest('button[data-pub-hide]');
+      if (hideBtn) { setNetworkHidden(hideBtn.dataset.pubHide, true); showToast(PUBLISH_NETWORKS[hideBtn.dataset.pubHide].name + ' hidden — bring it back in Settings → Networks.'); return; }
       const button = event.target.closest('button[data-pub-copy], button[data-pub-open], button[data-pub-publish], button[data-pub-retry]');
       if (!button) return;
       if (button.dataset.pubCopy) {
@@ -3725,6 +3769,10 @@ Return three concepts, rank them, then provide the final image-generation prompt
       const d = event.target.closest('[data-disconnect]');
       if (c) connectNetwork(c.dataset.connect);
       else if (d) disconnectNetwork(d.dataset.disconnect);
+    });
+    $('#networkToggles').addEventListener('click', (event) => {
+      const t = event.target.closest('[data-net-toggle]');
+      if (t) setNetworkHidden(t.dataset.netToggle, !isHidden(t.dataset.netToggle));
     });
     $('#bufferConnectBtn').addEventListener('click', async (event) => {
       const btn = event.currentTarget;
