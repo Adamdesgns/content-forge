@@ -3346,22 +3346,38 @@ Return three concepts, rank them, then provide the final image-generation prompt
       id: 'buffer',
       getCapabilities(network) { return capsFor(network); },
       validate(post, connection) { return MockAdapter.validate(post, connection); },
-      // channels requires an input arg (ChannelsInput!). Best guess: empty object.
-      // If ChannelsInput has a required field, the probe below reveals it.
+      // Resolve the user's organization id (channels(input) requires it). The
+      // Account type's org field name varies, so discover it by introspection.
+      async getOrgId() {
+        const t = await bufferGraphQL('query{__type(name:"Account"){fields{name type{kind name ofType{kind name ofType{kind name}}}}}}', {});
+        const fields = (t.__type && t.__type.fields) || [];
+        const typeStr = (ty) => ty ? ((ty.name || '') + ' ' + (ty.ofType ? (ty.ofType.name || '') + ' ' + ((ty.ofType.ofType && ty.ofType.ofType.name) || '') : '')) : '';
+        const isList = (ty) => ty && (ty.kind === 'LIST' || (ty.ofType && ty.ofType.kind === 'LIST'));
+        const orgField = fields.find((f) => /organization/i.test(f.name) || /organization/i.test(typeStr(f.type)));
+        if (!orgField) throw new Error('Could not find your organization on the Buffer account.');
+        const d = await bufferGraphQL('query{account{' + orgField.name + '{id name}}}', {});
+        const val = d.account && d.account[orgField.name];
+        const org = Array.isArray(val) ? val[0] : val;
+        if (!org || !org.id) throw new Error('No Buffer organization found on this account.');
+        return org.id;
+      },
       async listChannels() {
-        const d = await bufferGraphQL('query { channels(input: {}) { id service name } }', {});
+        const organizationId = await this.getOrgId();
+        const d = await bufferGraphQL('query($input:ChannelsInput!){channels(input:$input){id service name}}', { input: { organizationId } });
         return (d && d.channels) || [];
       },
-      // ⚠️ VERIFY mutation + schedulingType/dueAt enum names against the live schema.
+      // schedulingType: automatic (Buffer publishes) | notification (notify me).
+      // mode: shareNow | customScheduled | addToQueue | shareNext. assets required (empty ok for text).
       async publish(post, connection, options = {}) {
         const input = {
-          channelIds: [connection.channelId],
-          text: post.text,
-          ...(options.scheduledAt
-            ? { dueAt: new Date(options.scheduledAt).toISOString(), schedulingType: 'custom' }
-            : { schedulingType: 'now' })
+          channelId: connection.channelId,
+          text: post.text || '',
+          assets: [],
+          schedulingType: 'automatic',
+          mode: options.scheduledAt ? 'customScheduled' : 'shareNow',
+          ...(options.scheduledAt ? { dueAt: new Date(options.scheduledAt).toISOString() } : {})
         };
-        const d = await bufferGraphQL('mutation($input: CreatePostInput!){ createPost(input:$input){ id } }', { input });
+        const d = await bufferGraphQL('mutation($input:CreatePostInput!){createPost(input:$input){id}}', { input });
         const providerId = d && d.createPost && d.createPost.id;
         if (options.scheduledAt) return { network: connection.network, state: 'scheduled', at: Date.now(), scheduledFor: options.scheduledAt, externalUrl: null, providerId, retryable: true };
         return { network: connection.network, state: 'published', at: Date.now(), externalUrl: null, providerId, error: null, retryable: false };
@@ -3791,28 +3807,26 @@ Return three concepts, rank them, then provide the final image-generation prompt
       if (token !== rawToken) showToast('Cleaned up some stray characters in your token.');
       const status = $('#bufferStatus');
       const schemaEl = $('#bufferSchema');
+      schemaEl.classList.add('hidden');
       btn.disabled = true; status.className = 'buffer-status'; status.innerHTML = '<span class="spinner"></span>Connecting to Buffer…';
-      // BETA: stash the token so the probe can authenticate, then reveal the schema.
       settings.bufferToken = token;
       try {
-        const schema = await bufferProbe();
-        schemaEl.textContent = schema;
-        schemaEl.classList.remove('hidden');
-      } catch (e) { /* probe is best-effort */ }
-      try {
         const made = await connectBuffer(token);
-        // Success: re-render everything (renderBufferStatus shows the ✓ line).
+        // Success: clean UI, no diagnostics box.
         btn.disabled = false;
         renderBufferStatus(); renderConnectedAccounts(); renderPublishStudio();
         showToast(made.length ? `Buffer connected — ${made.length} network${made.length === 1 ? '' : 's'} ready.` : 'Connected, but no supported channels were found on this Buffer account.');
       } catch (error) {
-        // Failure: connectBuffer already cleared the token, so DON'T call
-        // renderBufferStatus here — it would wipe this error message. Show it and stop.
+        // Failure: show the error AND the schema probe (to keep debugging). connectBuffer
+        // cleared the token, so don't call renderBufferStatus (it would wipe the error).
         btn.disabled = false;
         btn.textContent = 'Connect Buffer'; btn.dataset.mode = 'connect';
         $('#bufferToken').disabled = false;
         status.className = 'buffer-status bad';
         status.textContent = '✕ ' + (error.message || 'Could not connect to Buffer.');
+        settings.bufferToken = token; // keep for the probe
+        try { schemaEl.textContent = await bufferProbe(); schemaEl.classList.remove('hidden'); } catch (e) { /* best-effort */ }
+        settings.bufferToken = ''; // then clear (failed connect)
       }
     });
     $$('[data-close-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.closeModal}`).classList.add('hidden')));
