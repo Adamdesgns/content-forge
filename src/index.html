@@ -3371,30 +3371,29 @@ Return three concepts, rank them, then provide the final image-generation prompt
 
     const bufferConnected = () => !!settings.bufferToken;
 
-    // BETA diagnostics: introspect Buffer's schema so we can match field names
-    // exactly (ChannelsInput + the post mutation) instead of guessing per rebuild.
+    // BETA diagnostics: introspect Buffer's schema so we can match field names +
+    // enum values exactly (channels/org query + createPost) instead of guessing.
     async function bufferProbe() {
       const lines = [];
-      const kind = (t) => t ? ((t.name || (t.ofType && t.ofType.name) || t.kind) + (t.kind === 'NON_NULL' ? '!' : '')) : '?';
+      // Full recursive type-name printer: [AssetInput!]! etc.
+      const tn = (t) => { if (!t) return '?'; if (t.kind === 'NON_NULL') return tn(t.ofType) + '!'; if (t.kind === 'LIST') return '[' + tn(t.ofType) + ']'; return t.name || t.kind; };
+      const TYPEQ = (name) => `query{__type(name:"${name}"){kind enumValues{name} inputFields{name type{kind name ofType{kind name ofType{kind name ofType{kind name}}}}}}}`;
+      const introspect = async (name) => { try { const d = await bufferGraphQL(TYPEQ(name), {}); return d.__type; } catch (e) { return { err: e.message }; } };
+      // 1) Root query fields (to find how to fetch the organization id).
       try {
-        const d = await bufferGraphQL('query{__type(name:"ChannelsInput"){inputFields{name type{kind name ofType{kind name}}}}}', {});
-        const f = d.__type && d.__type.inputFields;
-        lines.push('ChannelsInput: ' + (f && f.length ? f.map((x) => x.name + ':' + kind(x.type)).join(', ') : '(none)'));
-      } catch (e) { lines.push('ChannelsInput: ' + e.message); }
-      try {
-        const d = await bufferGraphQL('query{__schema{mutationType{fields{name args{name type{kind name ofType{kind name}}}}}}}', {});
-        const fs = (d.__schema && d.__schema.mutationType && d.__schema.mutationType.fields) || [];
-        const posty = fs.filter((f) => /post|update|publish|create/i.test(f.name)).slice(0, 8);
-        lines.push('mutations: ' + posty.map((f) => f.name + '(' + f.args.map((a) => a.name + ':' + kind(a.type)).join(',') + ')').join('  |  '));
-        // Also introspect the input type of the most likely create mutation
-        const cp = posty.find((f) => /createpost|createupdate|create_post|createupdate/i.test(f.name)) || posty[0];
-        const inputType = cp && cp.args[0] && (cp.args[0].type.name || (cp.args[0].type.ofType && cp.args[0].type.ofType.name));
-        if (inputType) {
-          const d2 = await bufferGraphQL('query{__type(name:"' + inputType + '"){inputFields{name type{kind name ofType{kind name}}}}}', {});
-          const f2 = d2.__type && d2.__type.inputFields;
-          lines.push(inputType + ': ' + (f2 ? f2.map((x) => x.name + ':' + kind(x.type)).join(', ') : '(n/a)'));
-        }
-      } catch (e) { lines.push('mutations: ' + e.message); }
+        const d = await bufferGraphQL('query{__schema{queryType{fields{name args{name}}}}}', {});
+        lines.push('queries: ' + d.__schema.queryType.fields.map((f) => f.name + (f.args.length ? '(' + f.args.map((a) => a.name).join(',') + ')' : '')).join(', '));
+      } catch (e) { lines.push('queries: ' + e.message); }
+      // 2) Enums we must supply.
+      for (const t of ['SchedulingType', 'ShareMode']) {
+        const ty = await introspect(t);
+        lines.push(t + ': ' + (ty && ty.enumValues ? ty.enumValues.map((v) => v.name).join(' | ') : JSON.stringify(ty)));
+      }
+      // 3) Input types with full field types.
+      for (const t of ['ChannelsInput', 'CreatePostInput', 'AssetInput']) {
+        const ty = await introspect(t);
+        lines.push(t + ': ' + (ty && ty.inputFields ? ty.inputFields.map((f) => f.name + ':' + tn(f.type)).join(', ') : JSON.stringify(ty)));
+      }
       return lines.join('\n');
     }
 
