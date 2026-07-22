@@ -926,7 +926,7 @@
     .buffer-help { display: inline-block; margin-top: 8px; color: var(--blue); font-size: 11.5px; text-decoration: none; }
     .buffer-help:hover { text-decoration: underline; }
     .pub-badge.live { background: rgba(52,199,89,.16); color: #34c759; }
-    .pub-result { margin-top: 9px; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+    .pub-result { margin-top: 9px; font-size: 11.5px; line-height: 1.4; color: var(--muted); word-break: break-word; overflow-wrap: anywhere; }
     .pub-result.published { color: #34c759; }
     .pub-result.failed { color: #ff6b6b; }
     .pub-result a { color: inherit; }
@@ -3697,7 +3697,9 @@ Return three concepts, rank them, then provide the final image-generation prompt
         const verbed = result.state === 'scheduled' ? ' scheduled for ' + fmtWhen(result.scheduledFor) : (conn.mock ? ' published (demo).' : ' published.');
         showToast(PUBLISH_NETWORKS[key].name + verbed);
       } catch (error) {
-        publishResults[activeProject.id][key] = { network: key, state: 'failed', at: Date.now(), error: 'Publish failed — try again.', retryable: true };
+        // Surface the real provider error (e.g. Buffer's exact GraphQL message) so
+        // failures are diagnosable, not hidden behind a generic string.
+        publishResults[activeProject.id][key] = { network: key, state: 'failed', at: Date.now(), error: (error && error.message) || 'Publish failed — try again.', retryable: true };
       }
       renderPublishStudio();
     }
