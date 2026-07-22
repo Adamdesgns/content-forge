@@ -3581,10 +3581,11 @@ Return three concepts, rank them, then provide the final image-generation prompt
       const sh = window.screen.availHeight;
       const width = Math.min(620, Math.round(sw * 0.42));
       const height = Math.round(sh * 0.92);
+      // Open the composer beside Content Forge WITHOUT shrinking the app window —
+      // the old resizeTo squished the app into a cramped, double-scrollbar layout.
       const win = window.open(url, 'cf_pub_' + key, `width=${width},height=${height},left=${sw - width - 8},top=8`);
       if (!win) { showToast('Pop-up blocked — allow pop-ups for Content Forge, then tap again.'); return; }
       publishWindows[key] = win;
-      try { window.resizeTo(sw - width - 16, sh); window.moveTo(0, 0); } catch (error) { /* not resizable in this context */ }
       showToast(net.name + (prefilled ? ' opened with your post prefilled.' : source ? ' opened — text copied, just paste.' : ' opened.'));
     }
 
