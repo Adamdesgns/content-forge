@@ -391,16 +391,18 @@
       z-index: 5;
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 12px;
       padding: 12px 18px;
       border-bottom: 1px solid var(--line);
       background: rgba(12,14,18,.96);
       backdrop-filter: blur(10px);
     }
-    .workspace-title { min-width: 0; }
+    #closeWorkspaceBtn { flex: none; }
+    .workspace-title { min-width: 0; flex: 1 1 auto; }
     .workspace-title strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .workspace-title span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
-    .workspace-actions { margin-left: auto; display: flex; gap: 8px; }
+    .workspace-actions { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; }
 
     .workspace-grid {
       min-height: calc(100vh - 65px);
@@ -429,7 +431,7 @@
     .editor-tabs { display: flex; gap: 7px; padding: 10px; border-bottom: 1px solid var(--line); }
     .editor-tab { border: 0; border-radius: 9px; padding: 8px 10px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 850; cursor: pointer; }
     .editor-tab.active { color: var(--gold-2); background: rgba(209,170,98,.12); }
-    .prompt-editor { width: 100%; height: 60vh; min-height: 340px; border: 0; border-radius: 0; padding: 18px; background: #090b0f; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12px; line-height: 1.55; resize: vertical; }
+    .prompt-editor { width: 100%; max-width: 100%; box-sizing: border-box; height: 60vh; min-height: 340px; border: 0; border-radius: 0; padding: 18px; background: #090b0f; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12px; line-height: 1.55; resize: vertical; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 
     .adapt-list { display: grid; gap: 9px; }
     .adapt-card { padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.03); }
@@ -1195,6 +1197,7 @@
         <span id="workspaceSubtitle">Instagram · Carousel Forge</span>
       </div>
       <div class="workspace-actions">
+        <button class="btn small" id="newCampaignBtn"><span>+ New Campaign</span></button>
         <button class="btn small" id="copyPromptBtn"><span>Copy Prompt</span></button>
         <button class="btn small" id="downloadPromptBtn"><span>Download .txt</span></button>
         <button class="btn primary small" id="saveProjectBtn"><span>Save Campaign</span></button>
@@ -3172,7 +3175,9 @@ Return three concepts, rank them, then provide the final image-generation prompt
     $('#uploadZone').addEventListener('click', () => $('#imageInput').click());
     $('#imageInput').addEventListener('change', async (event) => { await handleImageFiles(event.target.files); event.target.value = ''; });
 
-    $('#closeWorkspaceBtn').addEventListener('click', () => { $('#workspace').classList.add('hidden'); activeProject = null; });
+    function closeWorkspace() { $('#workspace').classList.add('hidden'); activeProject = null; }
+    $('#closeWorkspaceBtn').addEventListener('click', closeWorkspace);
+    $('#newCampaignBtn').addEventListener('click', () => { closeWorkspace(); openWizard(); });
     $('#copyPromptBtn').addEventListener('click', async () => { await copyText($('#promptEditor').value); showToast('Prompt copied.'); });
     $('#downloadPromptBtn').addEventListener('click', () => { if (activeProject) downloadText(`${slugify(activeProject.name)}.txt`, $('#promptEditor').value); });
     $('#saveProjectBtn').addEventListener('click', saveActiveProject);
@@ -3854,8 +3859,10 @@ Return three concepts, rank them, then provide the final image-generation prompt
       if (event.key === 'Escape') {
         // Wizard goes through the discard guard so Escape can't wipe entered work.
         if (!$('#wizardBackdrop').classList.contains('hidden')) { closeWizard(); return; }
-        $('#libraryBackdrop').classList.add('hidden');
-        $('#settingsBackdrop').classList.add('hidden');
+        if (!$('#libraryBackdrop').classList.contains('hidden')) { $('#libraryBackdrop').classList.add('hidden'); return; }
+        if (!$('#settingsBackdrop').classList.contains('hidden')) { $('#settingsBackdrop').classList.add('hidden'); return; }
+        // Last resort: escape the campaign workspace so the user is never trapped.
+        if (!$('#workspace').classList.contains('hidden')) { closeWorkspace(); return; }
       }
     });
 
